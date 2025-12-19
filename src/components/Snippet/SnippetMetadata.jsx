@@ -96,7 +96,6 @@ const SnippetMetadata = ({ description, expectedOutput, customMetadata = [], onU
         onClick={handleCustomAdd}
         className="flex items-center space-x-2 text-accent hover:text-white px-4 py-2 rounded hover:bg-surface-hover transition-colors text-sm font-medium border border-dashed border-border hover:border-accent w-full justify-center"
       >
-        <Plus size={16} />
         <span>Custom +</span>
       </button>
     </div>

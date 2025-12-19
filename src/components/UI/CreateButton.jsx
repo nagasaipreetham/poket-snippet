@@ -81,7 +81,6 @@ const CreateButton = () => {
       onClick={() => setIsCreating(true)}
       className="w-full bg-white hover:bg-gray-200 text-black font-medium py-1.5 px-3 rounded flex items-center justify-center space-x-2 transition-colors mb-2"
     >
-      <Plus size={16} />
       <span>Create</span>
     </button>
   );

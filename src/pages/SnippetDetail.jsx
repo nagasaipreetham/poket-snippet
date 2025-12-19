@@ -108,12 +108,12 @@ const SnippetDetail = () => {
               <select
                 value={file.language}
                 onChange={(e) => updateFileMetadata(id, { language: e.target.value })}
-                className="bg-transparent text-text-muted text-xs outline-none cursor-pointer hover:text-white"
+                className="bg-black text-white text-xs outline-none cursor-pointer border border-white/20 rounded px-2 py-1 appearance-none focus:ring-1 focus:ring-accent"
               >
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
+                <option value="javascript" className="bg-black text-white selection:bg-white selection:text-black">JavaScript</option>
+                <option value="python" className="bg-black text-white">Python</option>
+                <option value="java" className="bg-black text-white">Java</option>
+                <option value="cpp" className="bg-black text-white">C++</option>
               </select>
               <button className="flex items-center space-x-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wide transition-colors shadow-lg shadow-green-900/20">
                 <Play size={10} fill="currentColor" />

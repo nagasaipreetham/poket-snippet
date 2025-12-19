@@ -66,7 +66,11 @@ const SidebarItem = ({ item, type, level = 0 }) => {
   // Action: Navigate to Folder Detail Page AND Toggle
   const handleFolderClick = (e) => {
     navigate(`/folder/${item.id}`);
-    setIsOpen(!isOpen);
+    if (isActive) {
+      setIsOpen(!isOpen);
+    } else {
+      setIsOpen(true);
+    }
   };
 
   return (

@@ -65,6 +65,10 @@ export const FileSystemProvider = ({ children }) => {
     return newFolder.id;
   };
 
+  const updateFolder = (id, updates) => {
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+  };
+
   const createFile = (name, folderId = null, language = 'javascript') => {
     const newFile = {
       id: uuidv4(),
@@ -139,6 +143,7 @@ export const FileSystemProvider = ({ children }) => {
       files,
       recentFiles,
       createFolder,
+      updateFolder,
       createFile,
       updateFileContent,
       updateFileMetadata,
