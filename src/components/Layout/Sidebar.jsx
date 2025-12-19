@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Home, File, Folder, X, FilePlus, FolderPlus } from 'lucide-react';
+import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFileSystem } from '../../context/FileSystemContext';
 import SidebarItem from './SidebarItem';
@@ -13,6 +13,7 @@ const Sidebar = () => {
   // State for root creation inline input
   const [rootCreating, setRootCreating] = useState(null); // 'file' or 'folder'
   const [newRootName, setNewRootName] = useState('');
+  const [miscLimit, setMiscLimit] = useState(5);
 
   const { folders, files, getRootContents, createFolder, createFile } = useFileSystem();
 
@@ -49,6 +50,10 @@ const Sidebar = () => {
           <Home size={18} />
           <span>Home</span>
         </Link>
+        <Link to="/favorites" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+          <Heart size={18} />
+          <span>Favorites</span>
+        </Link>
 
         {/* Restored Main Create Button - User Request #3 */}
         <div className="px-2 pb-4 border-b border-border/50">
@@ -58,11 +63,32 @@ const Sidebar = () => {
         {/* Miscellaneous (Root Files) - User Request #1 */}
         {rootFiles.length > 0 && (
           <div className="mt-4">
-            <h3 className="px-3 text-xs font-bold text-text-muted uppercase tracking-widest mb-1">Miscellaneous</h3>
+            <div className="px-3 flex items-center justify-between mb-1">
+              <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Miscellaneous</h3>
+              <Link to="/miscellaneous" className="text-[10px] text-accent hover:underline">View All</Link>
+            </div>
+
             <div className="space-y-0.5">
-              {rootFiles.map(file => (
+              {rootFiles.slice(0, miscLimit).map(file => (
                 <SidebarItem key={file.id} item={file} type="file" />
               ))}
+
+              {/* Pagination Button */}
+              {rootFiles.length > miscLimit && (
+                <button
+                  onClick={() => {
+                    if (miscLimit >= 10) {
+                      navigate('/miscellaneous');
+                    } else {
+                      setMiscLimit(10);
+                    }
+                  }}
+                  className="w-full flex items-center space-x-2 px-3 py-1.5 rounded hover:bg-surface text-text-muted hover:text-white transition-colors text-xs mt-1 group"
+                >
+                  <Plus size={12} className="group-hover:text-white" />
+                  <span>{miscLimit >= 10 ? 'View All' : 'More'}</span>
+                </button>
+              )}
             </div>
           </div>
         )}

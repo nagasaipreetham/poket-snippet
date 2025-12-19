@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const SnippetDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { files, updateFileContent, updateFileMetadata } = useFileSystem();
+  const { files, updateFileContent, updateFileMetadata, addToRecent } = useFileSystem();
 
   const [file, setFile] = useState(null);
 
@@ -24,6 +24,7 @@ const SnippetDetail = () => {
     const foundFile = files.find(f => f.id === id);
     if (foundFile) {
       setFile(foundFile);
+      addToRecent(foundFile);
       if (!isEditingCodeTitle) {
         setEditingCodeTitle(foundFile.codeTitle || 'Untitled Logic');
       }

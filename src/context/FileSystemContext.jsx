@@ -120,17 +120,113 @@ export const FileSystemProvider = ({ children }) => {
     });
   };
 
-  // Getters for Recursive Logic
+  const toggleFavorite = (id, type) => {
+    if (type === 'file') {
+      setFiles(prev => prev.map(f => f.id === id ? { ...f, isFavorite: !f.isFavorite } : f));
+    } else {
+      setFolders(prev => prev.map(f => f.id === id ? { ...f, isFavorite: !f.isFavorite } : f));
+    }
+  };
+
+  const togglePin = (id, type) => {
+    if (type === 'file') {
+      setFiles(prev => prev.map(f => f.id === id ? { ...f, isPinned: !f.isPinned } : f));
+    } else {
+      setFolders(prev => prev.map(f => f.id === id ? { ...f, isPinned: !f.isPinned } : f));
+    }
+    // toast.success(type + " Pin toggled"); // User requested to remove message
+  };
+
+
+  // Helper: Recursive delete logic to get ALL IDs to delete
+  const getAllDescendants = (folderId) => {
+    let descendantFileIds = [];
+    let descendantFolderIds = [folderId];
+
+    // Files directly in this folder
+    const directFiles = files.filter(f => f.folderId === folderId);
+    descendantFileIds.push(...directFiles.map(f => f.id));
+
+    // Sub-folders
+    const subFolders = folders.filter(f => f.parentId === folderId);
+
+    subFolders.forEach(sub => {
+      const result = getAllDescendants(sub.id);
+      descendantFileIds.push(...result.fileIds);
+      descendantFolderIds.push(...result.folderIds);
+    });
+
+    return { fileIds: descendantFileIds, folderIds: descendantFolderIds };
+  };
+
+  // Helper: Get formatted list of files for Delete Modal (recursively)
+  const getFlatFileList = (folderId) => {
+    const allFiles = [];
+
+    const traverse = (currentId) => {
+      // Files in current
+      const fs = files.filter(f => f.folderId === currentId);
+      allFiles.push(...fs);
+
+      // Folders in current
+      const subs = folders.filter(f => f.parentId === currentId);
+      subs.forEach(sub => traverse(sub.id));
+    }
+
+    traverse(folderId);
+    return allFiles;
+  };
+
+  const deleteItem = (id, type) => {
+    if (type === 'file') {
+      setFiles(prev => prev.filter(f => f.id !== id));
+      setRecentFiles(prev => prev.filter(f => f.id !== id));
+      toast.success("File deleted");
+    } else {
+      // Recursive delete
+      const { fileIds, folderIds } = getAllDescendants(id);
+
+      setFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
+      setRecentFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
+      setFolders(prev => prev.filter(f => !folderIds.includes(f.id)));
+      toast.success("Folder and contents deleted");
+    }
+  };
+
+  const moveItem = (itemId, type, targetFolderId) => {
+    if (type === 'file') {
+      setFiles(prev => prev.map(f => f.id === itemId ? { ...f, folderId: targetFolderId, updatedAt: new Date().toISOString() } : f));
+    } else {
+      if (itemId === targetFolderId) return; // Prevent self-move
+      // Prevent moving into own child (cycle) - Simple check
+      // For now assuming user won't do deep cyclic moves in simplified UI, but safe to add later.
+      setFolders(prev => prev.map(f => f.id === itemId ? { ...f, parentId: targetFolderId } : f));
+    }
+    toast.success("Moved successfully");
+  };
+
+  // Sort Helper
+  const sortItems = (items) => {
+    return [...items].sort((a, b) => {
+      // Pinned first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Then Alphabetical
+      return a.name.localeCompare(b.name);
+    });
+  };
+
+  // Getters for Recursive Logic with Sorting
   const getFolderContents = (folderId) => {
     const childFolders = folders.filter(f => f.parentId === folderId);
     const childFiles = files.filter(f => f.folderId === folderId);
-    return { folders: childFolders, files: childFiles };
+    return { folders: sortItems(childFolders), files: sortItems(childFiles) };
   };
 
   const getRootContents = () => {
-    const rootCtxFolders = folders.filter(f => !f.parentId); // Folders with no parent
-    const rootCtxFiles = files.filter(f => !f.folderId); // Files with no parent
-    return { folders: rootCtxFolders, files: rootCtxFiles };
+    const rootCtxFolders = folders.filter(f => !f.parentId);
+    const rootCtxFiles = files.filter(f => !f.folderId);
+    return { folders: sortItems(rootCtxFolders), files: sortItems(rootCtxFiles) };
   };
 
   // Legacy support getters (optional, but good for safety)
@@ -147,8 +243,14 @@ export const FileSystemProvider = ({ children }) => {
       createFile,
       updateFileContent,
       updateFileMetadata,
+      addToRecent, // Exposed for tracking visits
       getFolderContents,
       getRootContents,
+      deleteItem,
+      moveItem,
+      toggleFavorite,
+      togglePin,
+      getFlatFileList,
       getRootFiles, // Keep for backward compatibility if needed
       getFolderFiles // Keep for backward compatibility if needed
     }}>
