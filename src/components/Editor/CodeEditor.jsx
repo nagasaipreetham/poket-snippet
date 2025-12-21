@@ -39,7 +39,10 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
           fontFamily: 'Fira Code, monospace',
           scrollBeyondLastLine: false,
           automaticLayout: true,
-          padding: { top: 16 }
+          padding: { top: 16 },
+          scrollbar: {
+            alwaysConsumeMouseWheel: false
+          }
         }}
       />
     </div>
