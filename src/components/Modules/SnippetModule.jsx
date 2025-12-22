@@ -33,7 +33,6 @@ const SnippetModule = ({ module, onUpdate }) => {
   };
 
   // Metadata Helpers
-  // We operate on `module` props directly.
   const isDescriptionActive = module.description !== null && module.description !== undefined && module.description !== '';
   const isExpectedOutputActive = module.expectedOutput !== null && module.expectedOutput !== undefined && module.expectedOutput !== '';
   const customMetadata = module.customMetadata || [];
@@ -104,8 +103,8 @@ const SnippetModule = ({ module, onUpdate }) => {
         </div>
       </div>
 
-      {/* Editor Area */}
-      <div className="flex-1 min-h-[460px]">
+      {/* Editor Area - Fixed Height for Stability */}
+      <div className="h-[500px] w-full bg-[#191919]">
         <CodeEditor
           language={language}
           value={module.content}

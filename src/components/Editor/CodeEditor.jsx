@@ -38,7 +38,7 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
           fontSize: 14,
           fontFamily: 'Fira Code, monospace',
           scrollBeyondLastLine: false,
-          automaticLayout: true,
+          automaticLayout: true, // Re-enabled as tree stability is fixed
           padding: { top: 16 },
           scrollbar: {
             alwaysConsumeMouseWheel: false
