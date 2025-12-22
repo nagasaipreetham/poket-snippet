@@ -3,12 +3,23 @@ import CodeEditor from '../Editor/CodeEditor';
 import MetadataField from '../Snippet/MetadataField';
 import { Play } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import hljs from 'highlight.js'; // Reverted: Auto-detection via highlight.js
 
 const SnippetModule = ({ module, onUpdate, isDragging }) => {
   // Local state for editing code title specific to this module
   const [isEditingCodeTitle, setIsEditingCodeTitle] = useState(false);
   const [editingCodeTitle, setEditingCodeTitle] = useState('');
   const codeTitleRef = useRef(null);
+
+  // Timeout ref for debouncing language detection
+  const detectionTimeoutRef = useRef(null);
+
+  // Allowed languages for auto-detection
+  const allowedLanguages = [
+    "c", "cpp", "csharp", "java", "python", "javascript", "typescript",
+    "html", "css", "jsx", "tsx", "go", "rust", "ruby", "php", "json",
+    "solidity", "kotlin", "swift", "dart", "scala", "elixir", "erlang", "racket"
+  ];
 
   useEffect(() => {
     if (!isEditingCodeTitle) {
@@ -21,6 +32,35 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
       codeTitleRef.current.focus();
     }
   }, [isEditingCodeTitle]);
+
+  // Implemented: Automatic Language Detection (highlight.js)
+  useEffect(() => {
+    if (!module.content || module.content.trim() === '') return;
+
+    // Debounce detection to avoid performance hit on every keystroke
+    if (detectionTimeoutRef.current) clearTimeout(detectionTimeoutRef.current);
+
+    detectionTimeoutRef.current = setTimeout(() => {
+      try {
+        // Restrict detection to the allowed list specifically
+        const result = hljs.highlightAuto(module.content, allowedLanguages);
+
+        // Threshold check: if relevance < 15, assume plaintext
+        const detectedLang = result.relevance >= 15 ? result.language : 'plaintext';
+
+        // Only update if different to avoid potential loops/re-renders
+        if (module.language !== detectedLang) {
+          onUpdate({ language: detectedLang });
+        }
+      } catch (err) {
+        console.warn("Language detection failed:", err);
+      }
+    }, 1000); // 1 second debounce
+
+    return () => {
+      if (detectionTimeoutRef.current) clearTimeout(detectionTimeoutRef.current);
+    };
+  }, [module.content]); // Depend on content
 
   const handleCodeTitleSubmit = () => {
     setIsEditingCodeTitle(false);
@@ -89,12 +129,22 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
           <select
             value={language}
             onChange={(e) => onUpdate({ language: e.target.value })}
-            className="bg-black text-white text-xs outline-none cursor-pointer border border-white/20 rounded px-2 py-1 appearance-none focus:ring-1 focus:ring-accent"
+            className="bg-black text-white text-xs outline-none cursor-pointer border border-white/20 rounded px-2 py-1 appearance-none focus:ring-1 focus:ring-accent max-w-[120px]"
           >
-            <option value="javascript" className="bg-black text-white selection:bg-white selection:text-black">JavaScript</option>
-            <option value="python" className="bg-black text-white">Python</option>
-            <option value="java" className="bg-black text-white">Java</option>
-            <option value="cpp" className="bg-black text-white">C++</option>
+            {/* Dynamic Option Rendering to support detected languages that might not be in hardcoded list */}
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+            <option value="typescript">TypeScript</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="json">JSON</option>
+            <option value="plaintext">Plain Text</option>
+            {/* If current language is not in common list, add it dynamically */}
+            {!['javascript', 'python', 'java', 'cpp', 'typescript', 'html', 'css', 'json', 'plaintext'].includes(language) && (
+              <option value={language}>{language}</option>
+            )}
           </select>
           <button className="flex items-center space-x-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wide transition-colors shadow-lg shadow-green-900/20">
             <Play size={10} fill="currentColor" />
