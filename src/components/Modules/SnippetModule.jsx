@@ -4,7 +4,7 @@ import MetadataField from '../Snippet/MetadataField';
 import { Play } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-const SnippetModule = ({ module, onUpdate }) => {
+const SnippetModule = ({ module, onUpdate, isDragging }) => {
   // Local state for editing code title specific to this module
   const [isEditingCodeTitle, setIsEditingCodeTitle] = useState(false);
   const [editingCodeTitle, setEditingCodeTitle] = useState('');
@@ -104,12 +104,22 @@ const SnippetModule = ({ module, onUpdate }) => {
       </div>
 
       {/* Editor Area - Fixed Height for Stability */}
-      <div className="h-[500px] w-full bg-[#191919]">
-        <CodeEditor
-          language={language}
-          value={module.content}
-          onChange={handleEditorChange}
-        />
+      {/* SAFE MODE: If dragging, replace heavy editor with static preview to prevent crashes */}
+      <div className="h-[500px] w-full bg-[#191919] relative group">
+        {!isDragging ? (
+          <CodeEditor
+            language={language}
+            value={module.content}
+            onChange={handleEditorChange}
+          />
+        ) : (
+          <div className="h-full w-full p-4 overflow-hidden bg-[#1e1e1e] flex flex-col">
+            {/* Mock Editor Look */}
+            <div className="flex-1 font-mono text-sm text-[#d4d4d4] whitespace-pre-wrap font-[Fira_Code] opacity-80 select-none">
+              {module.content || '// Empty Snippet'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* IN-EDITOR METADATA FIELDS */}

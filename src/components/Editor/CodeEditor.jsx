@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 
 // Configure Monaco loader if needed (optional)
@@ -38,7 +38,7 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
           fontSize: 14,
           fontFamily: 'Fira Code, monospace',
           scrollBeyondLastLine: false,
-          automaticLayout: true, // Re-enabled as tree stability is fixed
+          automaticLayout: true, // Re-enabled for reliable rendering (Safe Mode prevents crashes)
           padding: { top: 16 },
           scrollbar: {
             alwaysConsumeMouseWheel: false

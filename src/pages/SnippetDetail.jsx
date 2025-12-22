@@ -20,6 +20,7 @@ const SnippetDetail = () => {
   // Drag & Drop State
   const [isDragging, setIsDragging] = useState(false);
   const [dropTargetIndex, setDropTargetIndex] = useState(null);
+  const [lastMovedId, setLastMovedId] = useState(null); // Track moved item for auto-scroll
   const containerRef = useRef(null);
   const moduleRefs = useRef({});
 
@@ -56,6 +57,17 @@ const SnippetDetail = () => {
 
   useEffect(() => { if (isEditingName && nameInputRef.current) nameInputRef.current.focus(); }, [isEditingName]);
 
+  // Auto-scroll to moved item
+  useEffect(() => {
+    if (lastMovedId && moduleRefs.current[lastMovedId]) {
+      // Small timeout to ensure DOM is settled
+      setTimeout(() => {
+        moduleRefs.current[lastMovedId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      setLastMovedId(null);
+    }
+  }, [lastMovedId, file]); // Depend on file to ensure render is complete
+
   const handleModuleUpdate = (index, updates) => {
     if (!file) return;
     const newModules = [...file.modules];
@@ -73,7 +85,7 @@ const SnippetDetail = () => {
       newModule = {
         id: uuidv4(),
         type: 'snippet',
-        content: '// New Snippet',
+        content: '// Code here....',
         language: 'javascript',
         codeTitle: 'Untitled Logic',
         description: '',
@@ -111,6 +123,7 @@ const SnippetDetail = () => {
     const updatedFile = { ...file, modules: newModules };
     setFile(updatedFile);
     updateFileMetadata(id, { modules: newModules });
+    setLastMovedId(item.id); // Trigger auto-scroll
   };
 
   const calculateDropIndex = (y) => {
@@ -191,20 +204,19 @@ const SnippetDetail = () => {
                 ) : (
                   <SnippetModule
                     module={module}
+                    isDragging={isDragging}
                     onUpdate={(updates) => handleModuleUpdate(index, updates)}
                   />
                 )}
               </ModuleWrapper>
             </div>
-
-            {/* Last Gap Indicator */}
-            {index === file.modules.length - 1 && (
-              <div
-                className={`rounded-full w-full transition-all duration-200 ${isDragging && dropTargetIndex === file.modules.length ? 'h-1 bg-blue-500 my-2' : 'h-0'}`}
-              />
-            )}
           </React.Fragment>
         ))}
+
+        {/* Final Gap Indicator - Outside the loop for stability */}
+        <div
+          className={`rounded-full w-full transition-all duration-200 ${isDragging && dropTargetIndex === file.modules.length ? 'h-1 bg-blue-500 my-2' : 'h-0'}`}
+        />
       </div>
     </div>
   );

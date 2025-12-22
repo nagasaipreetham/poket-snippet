@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Plus, Hand } from 'lucide-react';
+import { Plus, GripVertical } from 'lucide-react';
 import { motion, useDragControls } from 'framer-motion';
 
 const ModuleWrapper = ({
@@ -157,7 +157,7 @@ const ModuleWrapper = ({
             title="Drag to Reorder"
             style={{ touchAction: 'none' }}
           >
-            <Hand size={18} className={isHandPressed ? "scale-90" : ""} />
+            <GripVertical size={18} className={isHandPressed ? "scale-90" : ""} />
           </div>
         </div>
 

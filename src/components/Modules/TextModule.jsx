@@ -26,14 +26,14 @@ const TextModule = ({ module, onUpdate, onAddNext, autoFocus }) => {
   };
 
   return (
-    <div className="group relative mb-2">
+    <div className="group relative mb-2 flex items-center">
       <textarea
         ref={textareaRef}
         value={module.content}
         onChange={(e) => onUpdate({ content: e.target.value })}
         onKeyDown={handleKeyDown}
         placeholder="Type here..."
-        className="w-full bg-transparent text-text outline-none resize-none overflow-hidden text-base leading-relaxed placeholder-white/20"
+        className="w-full bg-transparent text-text outline-none resize-none overflow-hidden text-base leading-relaxed placeholder-white/20 py-1"
         rows={1}
       />
     </div>
