@@ -1,9 +1,44 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { X, Send, ArrowDown } from 'lucide-react';
+import { X, Send, ArrowDown, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import useChatStore from '../../store/chatStore';
 import { sendMessageToGemini } from '../../services/gemini';
 import toast from 'react-hot-toast';
+
+const CodeBlock = ({ language, children }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(children);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="rounded-md overflow-hidden my-2 border border-[#333] bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#252526] border-b border-[#333]">
+        <span className="text-xs text-gray-400 font-sans">{language || 'code'}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <SyntaxHighlighter
+        language={language || 'text'}
+        style={vscDarkPlus}
+        customStyle={{ margin: 0, padding: '1rem', fontSize: '0.8rem', lineHeight: '1.5' }}
+        wrapLongLines={true}
+      >
+        {children}
+      </SyntaxHighlighter>
+    </div>
+  );
+};
 
 const ChatInterface = () => {
   const { isOpen, toggleChat, messages, addMessage, isLoading, setLoading } = useChatStore();
@@ -81,6 +116,30 @@ const ChatInterface = () => {
     }
   };
 
+  // Custom Markdown Components
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match ? match[1] : '';
+
+      if (!inline && match) {
+        return (
+          <CodeBlock language={language}>
+            {String(children).replace(/\n$/, '')}
+          </CodeBlock>
+        );
+      }
+
+      return (
+        <code className="bg-[#333] text-gray-200 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
+          {children}
+        </code>
+      );
+    },
+    strong: ({ children }) => <strong className="font-bold text-gray-100">{children}</strong>, // 700 weight
+    em: ({ children }) => <em className="italic font-light text-gray-300">{children}</em>, // 300 weight + italic
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -120,7 +179,7 @@ const ChatInterface = () => {
             >
               {msg.role === 'assistant' ? (
                 <div className="prose prose-invert prose-sm max-w-none text-gray-200 font-light text-xs">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap">{msg.content}</p>
