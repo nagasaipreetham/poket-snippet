@@ -22,7 +22,8 @@ export const sendMessageToGemini = async (history, newMessage) => {
     console.log("Starting chat with history:", JSON.stringify(formattedHistory, null, 2));
 
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash",
+      //model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       history: formattedHistory,
     });
 

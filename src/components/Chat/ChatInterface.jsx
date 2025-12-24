@@ -111,7 +111,42 @@ const ChatInterface = () => {
       addMessage({ role: 'assistant', content: response });
     } catch (error) {
       console.error("Chat Error:", error);
-      toast.error(`AI Error: ${error.message || "Unknown error"}`);
+
+      let errorMessage = "An error occurred";
+
+      // Try to parse the error message if it's a JSON string inside the error object
+      if (error.message && error.message.includes('{')) {
+        try {
+          // Some API errors come as strings that look like "Error: ... { json }"
+          // Or simpler, just check keywords if parsing fails
+          if (error.message.includes('429') || error.message.includes('quota')) {
+            errorMessage = "🚨 Daily Limit Exceeded. Please try again later.";
+          } else if (error.message.includes('404')) {
+            errorMessage = "🚨 Model not found. Check API configuration.";
+          } else {
+            errorMessage = `AI Error: ${error.message}`;
+          }
+        } catch (e) {
+          errorMessage = `AI Error: ${error.message}`;
+        }
+      } else {
+        // Fallback checks
+        if (error.message?.includes('429')) {
+          errorMessage = "🚨 Daily Limit Exceeded. Please try again later.";
+        } else if (error.message?.includes('404')) {
+          errorMessage = "🚨 Model not found.";
+        } else {
+          errorMessage = `AI Error: ${error.message || "Unknown error"}`;
+        }
+      }
+
+      toast.error(errorMessage);
+      // Add a system message to the chat as well so it's persistent
+      addMessage({
+        role: 'assistant',
+        content: `**System Error:** ${errorMessage}`
+      });
+
     } finally {
       setLoading(false);
     }
@@ -139,6 +174,26 @@ const ChatInterface = () => {
     },
     strong: ({ children }) => <strong className="font-bold text-gray-100">{children}</strong>, // 700 weight
     em: ({ children }) => <em className="italic font-light text-gray-300">{children}</em>, // 300 weight + italic
+    table: ({ children }) => (
+      <div className="overflow-x-auto my-4 rounded-md border border-[#333] bg-[#1e1e1e]">
+        <table className="min-w-full text-left text-xs divide-y divide-[#333]">
+          {children}
+        </table>
+      </div>
+    ),
+    thead: ({ children }) => <thead className="bg-[#252526] text-gray-100 font-medium">{children}</thead>,
+    tbody: ({ children }) => <tbody className="divide-y divide-[#333]">{children}</tbody>,
+    tr: ({ children }) => <tr className="hover:bg-[#2a2a2c] transition-colors">{children}</tr>,
+    th: ({ children }) => (
+      <th className="px-4 py-3 whitespace-nowrap border-r border-[#333] last:border-r-0">
+        {children}
+      </th>
+    ),
+    td: ({ children }) => (
+      <td className="px-4 py-3 text-gray-300 whitespace-nowrap border-r border-[#333] last:border-r-0">
+        {children}
+      </td>
+    ),
   };
 
   if (!isOpen) return null;
