@@ -4,10 +4,13 @@ const useChatStore = create((set) => ({
   isOpen: false,
   messages: [],
   isLoading: false,
+  mode: 'chat', // 'chat' or 'compiler'
 
   toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
 
   setIsOpen: (isOpen) => set({ isOpen }),
+
+  setMode: (mode) => set({ mode }),
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages, {
