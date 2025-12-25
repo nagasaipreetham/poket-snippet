@@ -43,8 +43,7 @@ const CodeBlock = ({ language, children }) => {
 };
 
 const ChatInterface = () => {
-  const { isOpen, toggleChat, messages, addMessage, isLoading, setLoading, mode, setMode } = useChatStore();
-  const [inputValue, setInputValue] = useState('');
+  const { isOpen, toggleChat, messages, addMessage, isLoading, setLoading, mode, setMode, input: inputValue, setInput: setInputValue } = useChatStore();
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -243,8 +242,8 @@ const ChatInterface = () => {
           >
             {messages.length === 0 && !isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-center select-none pb-10">
-                <div className="font-bold text-gray-200 text-xl mb-6">Hi User, how can I assist you?</div>
-                <img src="/logo1.png" alt="Logo" className="w-20 h-20 opacity-80" />
+                <div className="font-bold text-gray-200 text-xl mb-2">Hi User, how can I assist you?</div>
+                <img src="/logo2.png" alt="Logo" className="w-20 opacity-80" />
               </div>
             ) : (
               messages.map((msg) => (

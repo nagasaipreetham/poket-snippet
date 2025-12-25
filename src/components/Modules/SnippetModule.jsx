@@ -1,11 +1,43 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CodeEditor from '../Editor/CodeEditor';
 import MetadataField from '../Snippet/MetadataField';
-import { Play } from 'lucide-react';
+import { Play, Sparkles } from 'lucide-react';
+import useCompilerStore from '../../store/compilerStore';
+import useChatStore from '../../store/chatStore';
+import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import hljs from 'highlight.js'; // Reverted: Auto-detection via highlight.js
 
 const SnippetModule = ({ module, onUpdate, isDragging }) => {
+  const { setCode: setCompilerCode } = useCompilerStore();
+  const { setInput: setChatInput, setMode: setChatMode, setIsOpen, input: chatInput } = useChatStore();
+
+  const handleRunSnippet = () => {
+    if (!module.content || !module.content.trim()) {
+      toast.error('Snippet is empty!', { position: 'bottom-left' });
+      return;
+    }
+    setCompilerCode(module.content);
+    setIsOpen(true);
+    setChatMode('compiler');
+    toast.success('Code copied to Compiler!', { position: 'bottom-left' });
+  };
+
+  const handleAskAI = () => {
+    if (!module.content || !module.content.trim()) {
+      toast.error('Snippet is empty!', { position: 'bottom-left' });
+      return;
+    }
+
+    const separator = chatInput && chatInput.trim() ? '\n\n' : '';
+    const newContent = chatInput + separator + module.content;
+
+    setChatInput(newContent);
+    setIsOpen(true);
+    setChatMode('chat');
+    toast.success('Copied to AI Chat!', { position: 'bottom-left' });
+  };
+
   // Local state for editing code title specific to this module
   const [isEditingCodeTitle, setIsEditingCodeTitle] = useState(false);
   const [editingCodeTitle, setEditingCodeTitle] = useState('');
@@ -146,7 +178,17 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               <option value={language}>{language}</option>
             )}
           </select>
-          <button className="flex items-center space-x-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wide transition-colors shadow-lg shadow-green-900/20">
+          <button
+            onClick={handleAskAI}
+            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wide transition-colors shadow-lg shadow-blue-900/20"
+          >
+            <Sparkles size={10} />
+            <span>Ask AI</span>
+          </button>
+          <button
+            onClick={handleRunSnippet}
+            className="flex items-center space-x-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wide transition-colors shadow-lg shadow-green-900/20"
+          >
             <Play size={10} fill="currentColor" />
             <span>Run</span>
           </button>

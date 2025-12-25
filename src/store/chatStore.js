@@ -5,6 +5,8 @@ const useChatStore = create((set) => ({
   messages: [],
   isLoading: false,
   mode: 'chat', // 'chat' or 'compiler'
+  input: '',
+  setInput: (input) => set({ input }),
 
   toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
 

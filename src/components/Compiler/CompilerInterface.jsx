@@ -2,17 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, ChevronUp, ChevronDown, RefreshCw, Terminal, Check, Sparkles, MoreVertical } from 'lucide-react';
 import CodeEditor from '../Editor/CodeEditor';
 import { runCode } from '../../services/compilerService';
+import useCompilerStore from '../../store/compilerStore';
 
 const CompilerInterface = () => {
   const [language, setLanguage] = useState('javascript');
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
-  const [code, setCode] = useState('// Write your code here...');
+  const { code, setCode } = useCompilerStore();
   const [input, setInput] = useState(''); // State for stdin
   const [inputOpen, setInputOpen] = useState(false);
   const [outputOpen, setOutputOpen] = useState(true);
   const [activeBottomTab, setActiveBottomTab] = useState('output');
+  const [bottomHeight, setBottomHeight] = useState(200);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [isRunning, setIsRunning] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
@@ -36,6 +39,31 @@ const CompilerInterface = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isLangOpen, isConvertOpen]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      setBottomHeight((prev) => {
+        const newHeight = prev - e.movementY;
+        return Math.min(Math.max(newHeight, 100), 800);
+      });
+    };
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.body.style.cursor = 'default';
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ns-resize';
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+    };
+  }, [isDragging]);
 
 
   const languages = [
@@ -187,8 +215,16 @@ const CompilerInterface = () => {
       </div>
 
       {/* Bottom Panel (Input/Output) */}
-      <div className={`border-t border-[#333] bg-[#252526] flex flex-col transition-all duration-300 ease-in-out ${(activeBottomTab === 'input' && inputOpen) || (activeBottomTab === 'output' && outputOpen) ? 'h-48' : 'h-8'
-        }`}>
+      <div
+        style={{ height: (activeBottomTab === 'input' && inputOpen) || (activeBottomTab === 'output' && outputOpen) ? `${bottomHeight}px` : '32px' }}
+        className="border-t border-[#333] bg-[#252526] flex flex-col relative transition-[height] duration-75 ease-out"
+      >
+        {/* Resize Handle */}
+        <div
+          onMouseDown={(e) => { e.preventDefault(); setIsDragging(true); }}
+          className="absolute top-0 left-0 right-0 h-1.5 -mt-0.5 cursor-ns-resize hover:bg-blue-500/50 z-20 transition-colors"
+        />
+
         {/* Tabs */}
         <div className="flex items-center border-b border-[#333] h-8 shrink-0">
           <button
