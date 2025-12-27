@@ -3,6 +3,8 @@ import { Play, ChevronUp, ChevronDown, RefreshCw, Terminal, Check, Sparkles, Mor
 import CodeEditor from '../Editor/CodeEditor';
 import { runCode } from '../../services/compilerService';
 import useCompilerStore from '../../store/compilerStore';
+import { GoogleGenAI } from "@google/genai";
+import toast from 'react-hot-toast';
 
 const CompilerInterface = () => {
   const [language, setLanguage] = useState('javascript');
@@ -123,6 +125,114 @@ const CompilerInterface = () => {
     }
   };
 
+  // Auto Complete States
+  const [originalCode, setOriginalCode] = useState('');
+  const [enhancedCode, setEnhancedCode] = useState(null);
+  const [isShowingEnhanced, setIsShowingEnhanced] = useState(false);
+  const [isAutoCompleting, setIsAutoCompleting] = useState(false);
+  const isToggleAction = useRef(false);
+
+  // Gemini API Configuration
+  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_AUTO_COMPLETE_KEY;
+
+  const handleAutoComplete = async () => {
+    if (enhancedCode) {
+      // Toggle Mode
+      isToggleAction.current = true;
+      if (isShowingEnhanced) {
+        setCode(originalCode);
+        setIsShowingEnhanced(false);
+      } else {
+        setCode(enhancedCode);
+        setIsShowingEnhanced(true);
+      }
+      // Reset toggle flag after a short delay to ensure onChange processed it
+      setTimeout(() => { isToggleAction.current = false; }, 100);
+      return;
+    }
+
+    // Generate Mode
+    if (!code.trim()) return;
+
+    setIsAutoCompleting(true);
+    setOriginalCode(code); // Save current as original
+
+    // Verify key exists
+    if (!GEMINI_API_KEY) {
+      toast.error("API Key missing. Check .env file.");
+      console.error("VITE_GEMINI_AUTO_COMPLETE_KEY is missing");
+      setIsAutoCompleting(false);
+      return;
+    }
+
+    try {
+      // Initialize client
+      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+      const prompt = `
+        You are an expert coding assistant. 
+        Please complete, fix, or enhance the following code.
+        Language: ${language}
+        
+        Rules:
+        1. Return ONLY the code. 
+        2. Do not wrap in markdown code blocks (like \`\`\`javascript). 
+        3. Do not add explanations.
+        4. Maintain the style and logic but improve it or complete it if incomplete.
+        
+        Code:
+        ${code}
+      `;
+
+      // Use usage pattern from gemini.js:
+      // const chat = ai.chats.create({ model: ..., history: ... })
+      // const result = await chat.sendMessage(...)
+
+      const chat = client.chats.create({
+        model: 'gemini-2.5-flash-lite',
+        history: [], // No history needed for single completion
+      });
+
+      const result = await chat.sendMessage({
+        message: prompt
+      });
+
+      let generatedCode = result.text;
+
+      if (generatedCode && generatedCode.trim()) {
+        // Clean up markdown if present despite instructions
+        generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+
+        setEnhancedCode(generatedCode);
+        isToggleAction.current = true;
+        setCode(generatedCode);
+        setIsShowingEnhanced(true);
+        setTimeout(() => { isToggleAction.current = false; }, 100);
+      } else {
+        console.log("No code generated");
+        toast.error("No suggestions received");
+      }
+
+    } catch (error) {
+      console.error("Auto complete error:", error);
+      toast.error(`Auto Complete Error: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsAutoCompleting(false);
+    }
+  };
+
+  const handleEditorChange = (newCode) => {
+    if (!isToggleAction.current) {
+      // If user manually edits, clear the enhanced state
+      // But only if we are not currently toggling
+      if (enhancedCode) {
+        setEnhancedCode(null);
+        setIsShowingEnhanced(false);
+      }
+    }
+    setCode(newCode || '');
+  };
+
   const handleRun = async () => {
     if (!code.trim() && !input.trim()) return; // Allow running if there's just input, though usually need code
 
@@ -196,10 +306,23 @@ const CompilerInterface = () => {
         {/* Expanded Toolbar (Auto Complete) */}
         <div className={`overflow-hidden transition-all duration-300 ease-in-out px-3 flex justify-end gap-3 ${isToolbarExpanded ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'}`}>
           <button
-            className="flex items-center gap-2 px-4 py-1.5 bg-[#1e1e1e] border-2 border-yellow-500/30 hover:bg-yellow-500/10 text-yellow-500 rounded-full text-xs transition-all font-medium"
+            onClick={handleAutoComplete}
+            disabled={isAutoCompleting}
+            className={`flex items-center gap-2 px-4 py-1.5 border-2 rounded-full text-xs transition-all font-medium
+              ${enhancedCode
+                ? (isShowingEnhanced ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500')
+                : 'bg-[#1e1e1e] border-yellow-500/30 hover:bg-yellow-500/10 text-yellow-500'}
+            `}
           >
-            <Sparkles size={12} />
-            Auto Complete
+            {isAutoCompleting ? (
+              <RefreshCw size={12} className="animate-spin" />
+            ) : (
+              <Sparkles size={12} className={isShowingEnhanced ? "fill-current" : ""} />
+            )}
+            {enhancedCode
+              ? (isShowingEnhanced ? 'Show Original' : 'Show Enhanced')
+              : 'Auto Complete'
+            }
           </button>
         </div>
       </div>
@@ -209,7 +332,7 @@ const CompilerInterface = () => {
         <CodeEditor
           language={language}
           value={code}
-          onChange={(newCode) => setCode(newCode || '')}
+          onChange={handleEditorChange}
           theme="vs-dark"
         />
       </div>

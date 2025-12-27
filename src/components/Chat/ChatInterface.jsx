@@ -81,6 +81,8 @@ const ChatInterface = () => {
         textareaRef.current.style.height = `${newHeight}px`;
         // Toggle scrollbar based on content height
         textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 200 ? 'auto' : 'hidden';
+        // Auto-scroll to bottom of textarea
+        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
       }
     }
   }, [inputValue]);

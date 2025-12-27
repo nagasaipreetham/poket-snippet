@@ -7,6 +7,7 @@ import SnippetDetail from './pages/SnippetDetail';
 import FolderDetail from './pages/FolderDetail';
 import Favorites from './pages/Favorites';
 import AllMiscellaneous from './pages/AllMiscellaneous';
+import Login from './pages/Login';
 import { FileSystemProvider } from './context/FileSystemContext';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           style: { background: '#333', color: '#fff' }
         }} />
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Home />} />
             import AllMiscellaneous from './pages/AllMiscellaneous';
