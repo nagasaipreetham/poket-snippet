@@ -125,11 +125,15 @@ const CompilerInterface = () => {
     }
   };
 
-  // Auto Complete States
+  // Auto Complete & Convert States
   const [originalCode, setOriginalCode] = useState('');
   const [enhancedCode, setEnhancedCode] = useState(null);
+  const [originalLanguage, setOriginalLanguage] = useState(language);
+  const [enhancedLanguage, setEnhancedLanguage] = useState(null);
   const [isShowingEnhanced, setIsShowingEnhanced] = useState(false);
-  const [isAutoCompleting, setIsAutoCompleting] = useState(false);
+  const [isAutoCompleting, setIsAutoCompleting] = useState(false); // Also used for converting status if we want to block logic
+  const [isConverting, setIsConverting] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState('');
   const isToggleAction = useRef(false);
 
   // Gemini API Configuration
@@ -141,9 +145,11 @@ const CompilerInterface = () => {
       isToggleAction.current = true;
       if (isShowingEnhanced) {
         setCode(originalCode);
+        if (originalLanguage) setLanguage(originalLanguage);
         setIsShowingEnhanced(false);
       } else {
         setCode(enhancedCode);
+        if (enhancedLanguage) setLanguage(enhancedLanguage);
         setIsShowingEnhanced(true);
       }
       // Reset toggle flag after a short delay to ensure onChange processed it
@@ -156,6 +162,7 @@ const CompilerInterface = () => {
 
     setIsAutoCompleting(true);
     setOriginalCode(code); // Save current as original
+    setOriginalLanguage(language);
 
     // Verify key exists
     if (!GEMINI_API_KEY) {
@@ -204,6 +211,7 @@ const CompilerInterface = () => {
         generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
 
         setEnhancedCode(generatedCode);
+        setEnhancedLanguage(language); // Language doesn't change for auto-complete
         isToggleAction.current = true;
         setCode(generatedCode);
         setIsShowingEnhanced(true);
@@ -221,13 +229,92 @@ const CompilerInterface = () => {
     }
   };
 
+  const handleConvert = async () => {
+    if (!targetLanguage) {
+      toast.error("Please select a target language");
+      return;
+    }
+    if (!code.trim()) {
+      toast.error("Editor is empty");
+      return;
+    }
+
+    setIsConverting(true);
+    setOriginalCode(code);
+    setOriginalLanguage(language);
+
+    // Verify key exists
+    if (!GEMINI_API_KEY) {
+      toast.error("API Key missing. Check .env file.");
+      setIsConverting(false);
+      return;
+    }
+
+    try {
+      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      const targetLangName = languages.find(l => l.id === targetLanguage)?.name || targetLanguage;
+
+      const prompt = `
+        You are an expert software engineer.
+
+        Language you have to convert into : ${targetLangName}
+
+        Instructions:
+        - Fix all syntax and logical errors
+        - Complete missing or broken code
+        - Do not change working code logic unnecessarily
+        - Return only the final corrected code in the language that is mentioned above
+        - generate a single code that is fully working and ready to run in the languagementioned 
+        
+        Code:
+        ${code}
+      `;
+
+      const chat = client.chats.create({
+        model: 'gemini-2.5-flash-lite',
+        history: [],
+      });
+
+      const result = await chat.sendMessage({
+        message: prompt
+      });
+
+      let generatedCode = result.text;
+
+      if (generatedCode && generatedCode.trim()) {
+        generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+
+        setEnhancedCode(generatedCode);
+        setEnhancedLanguage(targetLanguage);
+
+        isToggleAction.current = true;
+        setCode(generatedCode);
+        setLanguage(targetLanguage);
+        setIsShowingEnhanced(true);
+        setIsConvertOpen(false); // Close popup
+
+        setTimeout(() => { isToggleAction.current = false; }, 100);
+        toast.success(`Converted to ${targetLangName}`);
+      } else {
+        toast.error("No code generated");
+      }
+
+    } catch (error) {
+      console.error("Convert error:", error);
+      toast.error(`Convert Error: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   const handleEditorChange = (newCode) => {
     if (!isToggleAction.current) {
       // If user manually edits, clear the enhanced state
-      // But only if we are not currently toggling
       if (enhancedCode) {
         setEnhancedCode(null);
+        setEnhancedLanguage(null);
         setIsShowingEnhanced(false);
+        // Note: We don't necessarily reset language here, as user might want to keep coding in the converted language
       }
     }
     setCode(newCode || '');
@@ -453,20 +540,26 @@ const CompilerInterface = () => {
             {languages.map(lang => (
               <button
                 key={lang.id}
+                onClick={() => setTargetLanguage(lang.id)}
                 style={{
                   borderColor: lang.color,
                   color: lang.color,
                   backgroundColor: lang.bg
                 }}
-                className="flex-auto px-4 py-2 rounded-full text-xs font-medium border-2 hover:opacity-80 transition-opacity flex items-center justify-center min-w-[100px]"
+                className={`flex-auto px-4 py-2 rounded-full text-xs font-medium border-2 hover:opacity-80 transition-opacity flex items-center justify-center min-w-[100px]
+                    ${targetLanguage === lang.id ? 'ring-2 ring-offset-1 ring-offset-[#1e1e1e] ring-blue-500' : ''}`}
               >
                 {lang.name}
               </button>
             ))}
           </div>
-          <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium self-end flex items-center gap-2">
-            <RefreshCw size={14} />
-            Convert Code
+          <button
+            onClick={handleConvert}
+            disabled={isConverting || !targetLanguage}
+            className={`px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium self-end flex items-center gap-2 transition-all ${isConverting ? 'opacity-70 cursor-wait' : ''}`}
+          >
+            {isConverting ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            {isConverting ? 'Converting...' : 'Convert Code'}
           </button>
         </div>
       )}
