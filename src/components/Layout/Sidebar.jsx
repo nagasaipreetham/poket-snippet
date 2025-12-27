@@ -157,6 +157,19 @@ const Sidebar = () => {
         </div>
       </nav>
 
+      {/* Support / Buy me a coffee */}
+      <div className="p-4 border-t border-border bg-[#1e1e1e]">
+        <div className="text-xs text-center text-gray-300 mb-3 font-medium">Support me by buying a coffee...</div>
+        <a
+          href="https://www.buymeacoffee.com/Preetham.Dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-full bg-white rounded-full py-1.5 hover:opacity-90 transition-opacity shadow-md"
+        >
+          <img src="/bmc.png" alt="Buy me a coffee" className="h-8 object-contain" />
+        </a>
+      </div>
+
       {/* Search Modal */}
       {isSearchOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-24 animate-in fade-in duration-200" onClick={() => setIsSearchOpen(false)}>
