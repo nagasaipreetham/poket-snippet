@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFileSystem } from '../../context/FileSystemContext';
 import SidebarItem from './SidebarItem';
@@ -9,6 +9,45 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Responsive Sidebar Logic
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1000);
+  const [isSmallOverlay, setIsSmallOverlay] = useState(window.innerWidth <= 600); // Specific for click-outside closure
+  const [isOpen, setIsOpen] = useState(!isMobile); // Default open on desktop
+  const [dragStartX, setDragStartX] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1000;
+      setIsMobile(mobile);
+      setIsSmallOverlay(window.innerWidth <= 600);
+      if (!mobile) setIsOpen(true);
+      else if (!isOpen) setIsOpen(false); // Ensure closed state logic if switching to mobile
+    };
+
+    // Initial check
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleDragStart = (e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    setDragStartX(clientX);
+  };
+
+  const handleDragEnd = (e) => {
+    if (dragStartX === null) return;
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const diff = clientX - dragStartX;
+
+    // If dragged right significantly (> 50px), open sidebar
+    if (diff > 50) {
+      setIsOpen(true);
+    }
+    setDragStartX(null);
+  };
 
   // State for root creation inline input
   const [rootCreating, setRootCreating] = useState(null); // 'file' or 'folder'
@@ -27,209 +66,253 @@ const Sidebar = () => {
   const { folders: rootFolders, files: rootFiles } = getRootContents();
 
   return (
-    <aside className="w-64 h-screen bg-sidebar border-r border-border flex flex-col text-sm text-text font-medium">
-      {/* User Info */}
-      <div className="p-4 flex items-center space-x-3 hover:bg-surface transition-colors cursor-pointer mb-2 border-b border-transparent hover:border-border">
-        <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center text-accent font-bold">U</div>
-        <span className="text-white">User Name</span>
-      </div>
+    <>
+      {/* Mobile Handle */}
+      {/* Mobile Handle */}
+      {/* Mobile Handle */}
+      {isMobile && !isOpen && (
+        <div
+          className="fixed left-0 top-10 w-4 h-14 bg-sidebar rounded-r-xl z-[100] flex items-center justify-center cursor-pointer shadow-lg hover:w-7 transition-all duration-200 border-y border-r border-white/10"
+          onClick={() => setIsOpen(true)}
+          onTouchStart={handleDragStart}
+          onTouchEnd={handleDragEnd}
+          onMouseDown={handleDragStart}
+          onMouseUp={handleDragEnd}
+          title="Open Sidebar"
+        >
+          {/* Vertical Pill Icon */}
+          <div className="w-1 h-6 bg-white/40 rounded-full" />
+        </div>
+      )}
 
-      {/* Trigger Search (Visual only, opens modal) */}
-      <div
-        className="mx-4 mb-4 p-2 bg-surface rounded flex items-center space-x-2 text-text-muted hover:text-white cursor-pointer transition-colors border border-transparent hover:border-border group"
-        onClick={() => setIsSearchOpen(true)}
+      {/* Small Screen Overlay (Click outside to close) - Specific request for <= 600px */}
+      {isOpen && isSmallOverlay && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[90]"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`w-64 h-screen bg-sidebar border-r border-border flex flex-col text-sm text-text font-medium transition-transform duration-300 z-[100]
+          ${isMobile ? 'fixed inset-y-0 left-0 shadow-2xl' : 'relative'}
+          ${isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'}
+        `}
       >
-        <Search size={16} className="group-hover:text-accent transition-colors" />
-        <span className="text-xs uppercase tracking-wide">Search</span>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto space-y-2 px-2">
-        {/* Home */}
-        <Link to="/" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
-          <Home size={18} />
-          <span>Home</span>
-        </Link>
-        <Link to="/favorites" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
-          <Heart size={18} />
-          <span>Favorites</span>
-        </Link>
-
-        {/* Restored Main Create Button - User Request #3 */}
-        <div className="px-2 pb-4 border-b border-border/50">
-          <CreateButton />
+        {/* User Info */}
+        <div className="p-4 flex items-center justify-between hover:bg-surface transition-colors cursor-pointer mb-2 border-b border-transparent hover:border-border">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center text-accent font-bold">U</div>
+            <span className="text-white">User Name</span>
+          </div>
+          {/* Toggle Button for Mobile */}
+          {isMobile && (
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1 hover:bg-surface-hover rounded-full transition-colors text-text-muted hover:text-white"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
         </div>
 
-        {/* Miscellaneous (Root Files) - User Request #1 */}
-        {rootFiles.length > 0 && (
-          <div className="mt-4">
+        {/* Trigger Search (Visual only, opens modal) */}
+        <div
+          className="mx-4 mb-4 p-2 bg-surface rounded flex items-center space-x-2 text-text-muted hover:text-white cursor-pointer transition-colors border border-transparent hover:border-border group"
+          onClick={() => setIsSearchOpen(true)}
+        >
+          <Search size={16} className="group-hover:text-accent transition-colors" />
+          <span className="text-xs uppercase tracking-wide">Search</span>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto space-y-2 px-2">
+          {/* Home */}
+          <Link to="/" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+            <Home size={18} />
+            <span>Home</span>
+          </Link>
+          <Link to="/favorites" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+            <Heart size={18} />
+            <span>Favorites</span>
+          </Link>
+
+          {/* Restored Main Create Button - User Request #3 */}
+          <div className="px-2 pb-4 border-b border-border/50">
+            <CreateButton />
+          </div>
+
+          {/* Miscellaneous (Root Files) - User Request #1 */}
+          {rootFiles.length > 0 && (
+            <div className="mt-4">
+              <div className="px-3 flex items-center justify-between mb-1">
+                <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Miscellaneous</h3>
+                <Link to="/miscellaneous" className="text-[10px] text-accent hover:underline">View All</Link>
+              </div>
+
+              <div className="space-y-0.5">
+                {rootFiles.slice(0, miscLimit).map(file => (
+                  <SidebarItem key={file.id} item={file} type="file" />
+                ))}
+
+                {/* Pagination Button */}
+                {rootFiles.length > miscLimit && (
+                  <button
+                    onClick={() => {
+                      if (miscLimit >= 10) {
+                        navigate('/miscellaneous');
+                      } else {
+                        setMiscLimit(10);
+                      }
+                    }}
+                    className="w-full flex items-center space-x-2 px-3 py-1.5 rounded hover:bg-surface text-text-muted hover:text-white transition-colors text-xs mt-1 group"
+                  >
+                    <Plus size={12} className="group-hover:text-white" />
+                    <span>{miscLimit >= 10 ? 'View All' : 'More'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Workspace (Root Folders) */}
+          <div className="mt-6">
             <div className="px-3 flex items-center justify-between mb-1">
-              <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Miscellaneous</h3>
-              <Link to="/miscellaneous" className="text-[10px] text-accent hover:underline">View All</Link>
-            </div>
-
-            <div className="space-y-0.5">
-              {rootFiles.slice(0, miscLimit).map(file => (
-                <SidebarItem key={file.id} item={file} type="file" />
-              ))}
-
-              {/* Pagination Button */}
-              {rootFiles.length > miscLimit && (
+              <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Workspace</h3>
+              <div className="flex items-center space-x-1 opacity-100">
                 <button
-                  onClick={() => {
-                    if (miscLimit >= 10) {
-                      navigate('/miscellaneous');
-                    } else {
-                      setMiscLimit(10);
-                    }
-                  }}
-                  className="w-full flex items-center space-x-2 px-3 py-1.5 rounded hover:bg-surface text-text-muted hover:text-white transition-colors text-xs mt-1 group"
+                  onClick={() => setRootCreating('file')}
+                  className="p-1 hover:bg-surface rounded text-text-muted hover:text-white transition-colors"
+                  title="New Root File"
                 >
-                  <Plus size={12} className="group-hover:text-white" />
-                  <span>{miscLimit >= 10 ? 'View All' : 'More'}</span>
+                  <FilePlus size={14} />
                 </button>
-              )}
+                <button
+                  onClick={() => setRootCreating('folder')}
+                  className="p-1 hover:bg-surface rounded text-text-muted hover:text-white transition-colors"
+                  title="New Root Folder"
+                >
+                  <FolderPlus size={14} />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Workspace (Root Folders) */}
-        <div className="mt-6">
-          <div className="px-3 flex items-center justify-between mb-1">
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Workspace</h3>
-            <div className="flex items-center space-x-1 opacity-100">
-              <button
-                onClick={() => setRootCreating('file')}
-                className="p-1 hover:bg-surface rounded text-text-muted hover:text-white transition-colors"
-                title="New Root File"
-              >
-                <FilePlus size={14} />
-              </button>
-              <button
-                onClick={() => setRootCreating('folder')}
-                className="p-1 hover:bg-surface rounded text-text-muted hover:text-white transition-colors"
-                title="New Root Folder"
-              >
-                <FolderPlus size={14} />
-              </button>
-            </div>
-          </div>
-          {/* Root Creation Input */}
-          {rootCreating && (
-            <div className="mx-2 px-3 py-1.5 flex items-center space-x-2 bg-surface/50 rounded mb-2 animate-in fade-in slide-in-from-top-1">
-              {rootCreating === 'folder' ? <Folder size={16} className="text-amber-400" /> : <File size={16} className="text-accent" />}
-              <input
-                autoFocus
-                value={newRootName}
-                onChange={(e) => setNewRootName(e.target.value)}
-                onBlur={() => {
-                  if (!newRootName.trim()) { setRootCreating(null); return; }
-                  if (rootCreating === 'folder') createFolder(newRootName, null);
-                  else createFile(newRootName, null);
-                  setNewRootName('');
-                  setRootCreating(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+            {/* Root Creation Input */}
+            {rootCreating && (
+              <div className="mx-2 px-3 py-1.5 flex items-center space-x-2 bg-surface/50 rounded mb-2 animate-in fade-in slide-in-from-top-1">
+                {rootCreating === 'folder' ? <Folder size={16} className="text-amber-400" /> : <File size={16} className="text-accent" />}
+                <input
+                  autoFocus
+                  value={newRootName}
+                  onChange={(e) => setNewRootName(e.target.value)}
+                  onBlur={() => {
                     if (!newRootName.trim()) { setRootCreating(null); return; }
                     if (rootCreating === 'folder') createFolder(newRootName, null);
                     else createFile(newRootName, null);
                     setNewRootName('');
                     setRootCreating(null);
-                  }
-                  if (e.key === 'Escape') { setNewRootName(''); setRootCreating(null); }
-                }}
-                className="bg-transparent border-b border-accent outline-none text-xs text-white w-full pb-0.5"
-                placeholder={`New ${rootCreating}...`}
-              />
-            </div>
-          )}
-
-          <div className="space-y-0.5">
-            {rootFolders.length === 0 && !rootCreating && (
-              <div className="px-3 text-xs text-text-muted italic opacity-50">No workspaces</div>
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (!newRootName.trim()) { setRootCreating(null); return; }
+                      if (rootCreating === 'folder') createFolder(newRootName, null);
+                      else createFile(newRootName, null);
+                      setNewRootName('');
+                      setRootCreating(null);
+                    }
+                    if (e.key === 'Escape') { setNewRootName(''); setRootCreating(null); }
+                  }}
+                  className="bg-transparent border-b border-accent outline-none text-xs text-white w-full pb-0.5"
+                  placeholder={`New ${rootCreating}...`}
+                />
+              </div>
             )}
-            {/* Folders always first - SidebarItem handles children recursively */}
-            {rootFolders.map(folder => (
-              <SidebarItem key={folder.id} item={folder} type="folder" />
-            ))}
-          </div>
-        </div>
-      </nav>
 
-      {/* Support / Buy me a coffee */}
-      <div className="p-4 border-t border-border bg-[#1e1e1e]">
-        <div className="text-xs text-center text-gray-300 mb-3 font-medium">Support me by buying a coffee...</div>
-        <a
-          href="https://www.buymeacoffee.com/Preetham.Dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center w-full bg-white rounded-full py-1.5 hover:opacity-90 transition-opacity shadow-md"
-        >
-          <img src="/bmc.png" alt="Buy me a coffee" className="h-8 object-contain" />
-        </a>
-      </div>
-
-      {/* Search Modal */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-24 animate-in fade-in duration-200" onClick={() => setIsSearchOpen(false)}>
-          <div className="w-[600px] max-h-[70vh] flex flex-col bg-background border border-border rounded-xl shadow-2xl ring-1 ring-white/10" onClick={e => e.stopPropagation()}>
-            <div className="p-4 border-b border-border flex items-center space-x-3">
-              <Search size={20} className="text-accent" />
-              <input
-                value={searchQuery}
-                onChange={handleSearch}
-                placeholder="Search files, folders..."
-                className="bg-transparent border-none outline-none text-lg text-white placeholder-text-muted w-full font-medium"
-                autoFocus
-              />
-              <button onClick={() => setIsSearchOpen(false)} className="text-text-muted hover:text-white"><X size={20} /></button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2">
-              {searchQuery && filteredFiles.length === 0 && filteredFolders.length === 0 && (
-                <div className="p-8 text-center text-text-muted">No results found for "{searchQuery}"</div>
+            <div className="space-y-0.5">
+              {rootFolders.length === 0 && !rootCreating && (
+                <div className="px-3 text-xs text-text-muted italic opacity-50">No workspaces</div>
               )}
-
-              {!searchQuery && (
-                <div className="p-8 text-center text-text-muted text-xs uppercase tracking-widest">Type to search...</div>
-              )}
-
-              {filteredFolders.length > 0 && (
-                <div className="mb-2">
-                  <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Folders</h4>
-                  {filteredFolders.map(folder => (
-                    <div key={folder.id} className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group">
-                      <Folder size={16} className="text-text-muted group-hover:text-amber-400" />
-                      <span>{folder.name}</span>
-                      <span className="text-xs text-text-muted ml-auto">Folder</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {filteredFiles.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Files</h4>
-                  {filteredFiles.map(file => (
-                    <Link
-                      to={`/snippet/${file.id}`}
-                      key={file.id}
-                      onClick={() => setIsSearchOpen(false)}
-                      className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"
-                    >
-                      <File size={16} className="text-text-muted group-hover:text-accent" />
-                      <span>{file.name}</span>
-                      <span className="text-xs text-text-muted ml-auto">{file.language}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              {/* Folders always first - SidebarItem handles children recursively */}
+              {rootFolders.map(folder => (
+                <SidebarItem key={folder.id} item={folder} type="folder" />
+              ))}
             </div>
           </div>
+        </nav>
+
+        {/* Support / Buy me a coffee */}
+        <div className="p-4 border-t border-border bg-[#1e1e1e]">
+          <div className="text-xs text-center text-gray-300 mb-3 font-medium">Support me by buying a coffee...</div>
+          <a
+            href="https://www.buymeacoffee.com/Preetham.Dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-full bg-white rounded-full py-1.5 hover:opacity-90 transition-opacity shadow-md"
+          >
+            <img src="/bmc.png" alt="Buy me a coffee" className="h-8 object-contain" />
+          </a>
         </div>
-      )}
-    </aside>
+
+        {/* Search Modal */}
+        {isSearchOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-24 animate-in fade-in duration-200" onClick={() => setIsSearchOpen(false)}>
+            <div className="w-[600px] max-h-[70vh] flex flex-col bg-background border border-border rounded-xl shadow-2xl ring-1 ring-white/10" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-border flex items-center space-x-3">
+                <Search size={20} className="text-accent" />
+                <input
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  placeholder="Search files, folders..."
+                  className="bg-transparent border-none outline-none text-lg text-white placeholder-text-muted w-full font-medium"
+                  autoFocus
+                />
+                <button onClick={() => setIsSearchOpen(false)} className="text-text-muted hover:text-white"><X size={20} /></button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-2">
+                {searchQuery && filteredFiles.length === 0 && filteredFolders.length === 0 && (
+                  <div className="p-8 text-center text-text-muted">No results found for "{searchQuery}"</div>
+                )}
+
+                {!searchQuery && (
+                  <div className="p-8 text-center text-text-muted text-xs uppercase tracking-widest">Type to search...</div>
+                )}
+
+                {filteredFolders.length > 0 && (
+                  <div className="mb-2">
+                    <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Folders</h4>
+                    {filteredFolders.map(folder => (
+                      <div key={folder.id} className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group">
+                        <Folder size={16} className="text-text-muted group-hover:text-amber-400" />
+                        <span>{folder.name}</span>
+                        <span className="text-xs text-text-muted ml-auto">Folder</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {filteredFiles.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Files</h4>
+                    {filteredFiles.map(file => (
+                      <Link
+                        to={`/snippet/${file.id}`}
+                        key={file.id}
+                        onClick={() => setIsSearchOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"
+                      >
+                        <File size={16} className="text-text-muted group-hover:text-accent" />
+                        <span>{file.name}</span>
+                        <span className="text-xs text-text-muted ml-auto">{file.language}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 };
 

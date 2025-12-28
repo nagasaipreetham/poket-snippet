@@ -9,6 +9,7 @@ const MainLayout = () => {
   const { isOpen } = useChatStore();
   const [chatWidth, setChatWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth <= 600);
 
   // Animation state handles mount/unmount delay
   const [shouldRender, setShouldRender] = useState(isOpen);
@@ -22,6 +23,14 @@ const MainLayout = () => {
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 600);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const startResizing = (e) => {
     e.preventDefault();
@@ -70,8 +79,8 @@ const MainLayout = () => {
           <Outlet />
         </main>
 
-        {/* Resize Handle - Only visible when open */}
-        {isOpen && (
+        {/* Resize Handle - Only visible when open AND NOT small screen */}
+        {isOpen && !isSmallScreen && (
           <div
             className="w-1.5 hover:w-2 active:w-2 cursor-col-resize z-50 absolute top-0 bottom-0 flex items-center justify-center group touch-none"
             style={{ right: chatWidth - 3 }} // Positioned exactly at the edge
@@ -86,8 +95,10 @@ const MainLayout = () => {
         <div
           className={`border-l border-[#333] shadow-2xl z-40 bg-[#1e1e1e] overflow-hidden flex flex-col
             ${isResizing ? '' : 'transition-all duration-300 ease-in-out'} 
-            ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 absolute right-0'}`}
-          style={{ width: chatWidth }}
+            ${isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 absolute right-0'}
+            ${isSmallScreen && isOpen ? '!fixed !inset-0 !w-full !h-full' : ''}
+          `}
+          style={{ width: isSmallScreen ? '100%' : chatWidth }}
         >
           {shouldRender && <ChatInterface />}
         </div>
