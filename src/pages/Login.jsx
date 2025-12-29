@@ -1,64 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const { login: setAuthUser } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const initGoogleSignIn = () => {
-      if (!window.gapi) {
-        setTimeout(initGoogleSignIn, 100);
-        return;
-      }
-
-      window.gapi.load('auth2', () => {
-        const auth2 = window.gapi.auth2.init({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE', // Replace with your actual Client ID
-          cookiepolicy: 'single_host_origin',
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        // Fetch user details using the access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
         });
 
-        const element = document.getElementById('customBtn');
-        if (element) {
-          auth2.attachClickHandler(element, {},
-            (googleUser) => {
-              const profile = googleUser.getBasicProfile();
-              console.log('ID: ' + profile.getId());
-              console.log('Name: ' + profile.getName());
-              console.log('Image URL: ' + profile.getImageUrl());
-              console.log('Email: ' + profile.getEmail());
-              
-              const id_token = googleUser.getAuthResponse().id_token;
-              console.log('Token:', id_token);
+        const profile = await userInfoResponse.json();
 
-              toast.success(`Welcome back, ${profile.getName()}!`);
-              navigate('/'); // Navigate to home after successful login
-            }, (error) => {
-              console.error('Sign-in error:', error);
-              // Only show error toast if it's a real error, not just closing the popup
-              if (error.error !== 'popup_closed_by_user') {
-                 toast.error('Sign in failed. Please try again.');
-              }
-            }
-          );
-        }
+        // Save user to context
+        setAuthUser({
+          ...profile,
+          accessToken: tokenResponse.access_token
+        });
+
+        toast.success(`Welcome back, ${profile.name}!`);
+        navigate('/'); // Navigate to home after successful login
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+        toast.error('Failed to get user information.');
+      } finally {
         setLoading(false);
-      });
-    };
-
-    initGoogleSignIn();
-  }, [navigate]);
+      }
+    },
+    onError: (error) => {
+      console.error('Login Failed:', error);
+      toast.error('Sign in failed. Please try again.');
+      setLoading(false);
+    }
+  });
 
   return (
     <div className="min-h-screen w-full bg-[#191919] flex items-center justify-center relative overflow-hidden font-sans">
       {/* Background Ambience */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse delay-1000" />
-      
+
       {/* Glass Card */}
       <div className="relative z-10 w-full max-w-md p-8 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl flex flex-col items-center">
-        
+
         {/* Logo/Icon */}
         <div className="mb-8 p-4 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 shadow-lg shadow-purple-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,24 +69,24 @@ const Login = () => {
 
         {/* Custom Google Button */}
         <div
-          id="customBtn"
+          onClick={() => !loading && login()}
           className={`group relative flex items-center justify-center w-full px-6 py-3.5 
             bg-white hover:bg-gray-50 active:bg-gray-100
              text-gray-700 font-medium rounded-xl transition-all duration-200 
             cursor-pointer select-none shadow-lg shadow-black/20 overflow-hidden
             ${loading ? 'opacity-70 pointer-events-none' : ''}`}
         >
-           {/* Loading State Overlay */}
-           {loading && (
-             <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-               <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-             </div>
-           )}
+          {/* Loading State Overlay */}
+          {loading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+          )}
 
           <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/50 transition-colors duration-200" />
-          
-          <img 
-            src="https://www.svgrepo.com/show/475656/google-color.svg" 
+
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
             alt="Google"
             className="w-6 h-6 mr-3 z-10"
           />

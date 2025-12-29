@@ -10,6 +10,16 @@ import AllMiscellaneous from './pages/AllMiscellaneous';
 import Login from './pages/Login';
 import { FileSystemProvider } from './context/FileSystemContext';
 
+import { Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null; // Or a loading spinner
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
 function App() {
   return (
     <FileSystemProvider>
@@ -19,11 +29,13 @@ function App() {
         }} />
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            import AllMiscellaneous from './pages/AllMiscellaneous';
 
-            // ... inside Routes ...
+          <Route path="/" element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Home />} />
             <Route path="favorites" element={<Favorites />} />
             <Route path="miscellaneous" element={<AllMiscellaneous />} />
             <Route path="snippet/:id" element={<SnippetDetail />} />

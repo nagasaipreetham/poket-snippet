@@ -5,15 +5,20 @@ import { useFileSystem } from '../../context/FileSystemContext';
 import SidebarItem from './SidebarItem';
 import CreateButton from '../UI/CreateButton';
 
+import { useAuth } from '../../context/AuthContext';
+import { LogOut } from 'lucide-react';
+
 const Sidebar = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Responsive Sidebar Logic
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1000);
-  const [isSmallOverlay, setIsSmallOverlay] = useState(window.innerWidth <= 600); // Specific for click-outside closure
-  const [isOpen, setIsOpen] = useState(!isMobile); // Default open on desktop
+  const [isSmallOverlay, setIsSmallOverlay] = useState(window.innerWidth <= 600);
+  const [isOpen, setIsOpen] = useState(!isMobile);
   const [dragStartX, setDragStartX] = useState(null);
 
   useEffect(() => {
@@ -22,12 +27,9 @@ const Sidebar = () => {
       setIsMobile(mobile);
       setIsSmallOverlay(window.innerWidth <= 600);
       if (!mobile) setIsOpen(true);
-      else if (!isOpen) setIsOpen(false); // Ensure closed state logic if switching to mobile
+      else if (!isOpen) setIsOpen(false);
     };
-
-    // Initial check
     handleResize();
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -42,15 +44,13 @@ const Sidebar = () => {
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const diff = clientX - dragStartX;
 
-    // If dragged right significantly (> 50px), open sidebar
     if (diff > 50) {
       setIsOpen(true);
     }
     setDragStartX(null);
   };
 
-  // State for root creation inline input
-  const [rootCreating, setRootCreating] = useState(null); // 'file' or 'folder'
+  const [rootCreating, setRootCreating] = useState(null);
   const [newRootName, setNewRootName] = useState('');
   const [miscLimit, setMiscLimit] = useState(5);
 
@@ -58,18 +58,13 @@ const Sidebar = () => {
 
   const handleSearch = (e) => setSearchQuery(e.target.value);
 
-  // Filtered Logic for Search
   const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFolders = folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Render Logic
   const { folders: rootFolders, files: rootFiles } = getRootContents();
 
   return (
     <>
-      {/* Mobile Handle */}
-      {/* Mobile Handle */}
-      {/* Mobile Handle */}
       {isMobile && !isOpen && (
         <div
           className="fixed left-0 top-10 w-4 h-14 bg-sidebar rounded-r-xl z-[100] flex items-center justify-center cursor-pointer shadow-lg hover:w-7 transition-all duration-200 border-y border-r border-white/10"
@@ -80,17 +75,12 @@ const Sidebar = () => {
           onMouseUp={handleDragEnd}
           title="Open Sidebar"
         >
-          {/* Vertical Pill Icon */}
           <div className="w-1 h-6 bg-white/40 rounded-full" />
         </div>
       )}
 
-      {/* Small Screen Overlay (Click outside to close) - Specific request for <= 600px */}
       {isOpen && isSmallOverlay && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[90]"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-[90]" onClick={() => setIsOpen(false)} />
       )}
 
       <aside
@@ -100,19 +90,47 @@ const Sidebar = () => {
         `}
       >
         {/* User Info */}
-        <div className="p-4 flex items-center justify-between hover:bg-surface transition-colors cursor-pointer mb-2 border-b border-transparent hover:border-border">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center text-accent font-bold">U</div>
-            <span className="text-white">User Name</span>
+        <div className="relative border-b border-transparent hover:border-border">
+          <div
+            className="p-4 flex items-center justify-between hover:bg-surface transition-colors cursor-pointer"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+          >
+            <div className="flex items-center space-x-3 overflow-hidden">
+              {user?.picture ? (
+                <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full border border-white/10" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center text-accent font-bold">
+                  {user?.name?.charAt(0) || 'U'}
+                </div>
+              )}
+              <span className="text-white truncate max-w-[120px]" title={user?.name}>{user?.name || 'Guest User'}</span>
+            </div>
+
+            {/* Toggle for mobile close */}
+            {isMobile && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                className="p-1 hover:bg-surface-hover rounded-full transition-colors text-text-muted hover:text-white"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
           </div>
-          {/* Toggle Button for Mobile */}
-          {isMobile && (
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-surface-hover rounded-full transition-colors text-text-muted hover:text-white"
-            >
-              <ChevronLeft size={20} />
-            </button>
+
+          {/* Logout Dropdown */}
+          {showUserMenu && (
+            <div className="absolute top-full left-2 right-2 mt-1 bg-[#252525] border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors text-left"
+              >
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </div>
           )}
         </div>
 
