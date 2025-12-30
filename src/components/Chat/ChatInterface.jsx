@@ -48,6 +48,7 @@ const ChatInterface = () => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
+  const prevInputRef = useRef(inputValue);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,9 +66,30 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  /* Fix for initial height issue: ensure it resets properly */
+  // Auto-focus & Scroll Logic
   useEffect(() => {
-    if (textareaRef.current) {
+    if (isOpen && mode === 'chat' && textareaRef.current) {
+      const isFocused = document.activeElement === textareaRef.current;
+      const hasContentChanged = inputValue !== prevInputRef.current;
+
+      if (!isFocused) {
+        setTimeout(() => {
+          textareaRef.current.focus();
+          // Only scroll if content changed (Ask AI action)
+          if (hasContentChanged) {
+            const len = textareaRef.current.value.length;
+            textareaRef.current.setSelectionRange(len, len);
+            textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+          }
+        }, 100);
+      }
+    }
+    prevInputRef.current = inputValue;
+  }, [isOpen, mode, inputValue]);
+
+  /* Auto-resize textarea */
+  useEffect(() => {
+    if (textareaRef.current && mode === 'chat') {
       // Reset height to auto to get correct scrollHeight
       textareaRef.current.style.height = 'auto';
       // Set new height based on content, clamped to max 200px
@@ -75,17 +97,15 @@ const ChatInterface = () => {
 
       // If empty, force to minimum height to look like one line
       if (!inputValue) {
-        textareaRef.current.style.height = '40px';
+        textareaRef.current.style.height = '42px';
         textareaRef.current.style.overflowY = 'hidden';
       } else {
         textareaRef.current.style.height = `${newHeight}px`;
         // Toggle scrollbar based on content height
         textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 200 ? 'auto' : 'hidden';
-        // Auto-scroll to bottom of textarea
-        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
       }
     }
-  }, [inputValue]);
+  }, [inputValue, mode, isOpen]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

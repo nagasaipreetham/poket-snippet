@@ -41,6 +41,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
   // Local state for editing code title specific to this module
   const [isEditingCodeTitle, setIsEditingCodeTitle] = useState(false);
   const [editingCodeTitle, setEditingCodeTitle] = useState('');
+  const [focusTarget, setFocusTarget] = useState(null);
   const codeTitleRef = useRef(null);
 
   // Timeout ref for debouncing language detection
@@ -105,8 +106,8 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
   };
 
   // Metadata Helpers
-  const isDescriptionActive = module.description !== null && module.description !== undefined && module.description !== '';
-  const isExpectedOutputActive = module.expectedOutput !== null && module.expectedOutput !== undefined && module.expectedOutput !== '';
+  const isDescriptionActive = module.description !== null && module.description !== undefined;
+  const isExpectedOutputActive = module.expectedOutput !== null && module.expectedOutput !== undefined;
   const customMetadata = module.customMetadata || [];
   const hasMetadataFields = isDescriptionActive || isExpectedOutputActive || customMetadata.length > 0;
 
@@ -115,8 +116,10 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
 
   // Custom Metadata Handlers
   const handleCustomAdd = () => {
-    const newField = { id: uuidv4(), title: 'New Section', content: '' };
+    const newId = uuidv4();
+    const newField = { id: newId, title: 'New Section', content: '' };
     const currentCustom = module.customMetadata || [];
+    setFocusTarget(newId);
     onUpdate({ customMetadata: [...currentCustom, newField] });
   };
 
@@ -224,7 +227,8 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               onChange={(val) => onUpdate({ description: val })}
               onDelete={() => onUpdate({ description: null })}
               className="border-white/10 bg-white/5"
-              initialIsOpen={module.description === ' '}
+              initialIsOpen={focusTarget === 'description'}
+              autoFocus={focusTarget === 'description'}
             />
           )}
           {isExpectedOutputActive && (
@@ -234,7 +238,8 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               onChange={(val) => onUpdate({ expectedOutput: val })}
               onDelete={() => onUpdate({ expectedOutput: null })}
               className="border-white/10 bg-white/5"
-              initialIsOpen={module.expectedOutput === ' '}
+              initialIsOpen={focusTarget === 'expectedOutput'}
+              autoFocus={focusTarget === 'expectedOutput'}
             />
           )}
           {customMetadata.map(field => (
@@ -247,7 +252,8 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               onTitleChange={(val) => updateCustomField(field.id, { title: val })}
               onDelete={() => deleteCustomField(field.id)}
               className="border-white/10 bg-white/5"
-              initialIsOpen={field.content === ''}
+              initialIsOpen={focusTarget === field.id}
+              autoFocus={focusTarget === field.id}
             />
           ))}
         </div>
@@ -257,7 +263,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
       <div className="h-10 bg-[#1e1e1e] border-t border-white/10 flex items-center px-4 space-x-4 shrink-0">
         {!isDescriptionActive && (
           <button
-            onClick={() => onUpdate({ description: ' ' })}
+            onClick={() => { onUpdate({ description: '' }); setFocusTarget('description'); }}
             className="text-xs font-medium text-text-muted hover:text-white uppercase tracking-wide transition-colors flex items-center space-x-1"
           >
             <span>+ Description</span>
@@ -265,7 +271,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
         )}
         {!isExpectedOutputActive && (
           <button
-            onClick={() => onUpdate({ expectedOutput: ' ' })}
+            onClick={() => { onUpdate({ expectedOutput: '' }); setFocusTarget('expectedOutput'); }}
             className="text-xs font-medium text-text-muted hover:text-white uppercase tracking-wide transition-colors flex items-center space-x-1"
           >
             <span>+ Expected Output</span>

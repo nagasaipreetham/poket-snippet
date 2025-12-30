@@ -1,224 +1,268 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useAuth } from './AuthContext';
 
 const FileSystemContext = createContext();
 
 export const useFileSystem = () => useContext(FileSystemContext);
 
 export const FileSystemProvider = ({ children }) => {
-  // Initial state loaded from localStorage or empty
-  const [folders, setFolders] = useState(() => {
-    try {
-      const saved = localStorage.getItem('poket_folders');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Failed to parse folders", e);
-      return [];
-    }
+  const { user } = useAuth();
+  const [folders, setFolders] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [recentFiles, setRecentFiles] = useState([]); // Start empty, load in useEffect
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // Header Helper
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${user?.accessToken}`
   });
 
-  const [files, setFiles] = useState(() => {
-    try {
-      const saved = localStorage.getItem('poket_files');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Failed to parse files", e);
-      return [];
+  const [isLoading, setIsLoading] = useState(true);
+  const saveTimeoutRef = useRef(null);
+  const metadataTimeoutRef = useRef(null);
+
+  // Fetch Data on Load
+  useEffect(() => {
+    // Always clear state immediately on user change
+    setFolders([]);
+    setFiles([]);
+    setRecentFiles([]);
+
+    if (user?.accessToken) {
+      setIsLoading(true); // Start loading
+      fetchData();
+    } else {
+      setIsLoading(false);
     }
-  });
+  }, [user]);
 
-  const [recentFiles, setRecentFiles] = useState(() => {
+  const fetchData = async () => {
     try {
-      const saved = localStorage.getItem('poket_recent');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Failed to parse recent files", e);
-      return [];
-    }
-  });
+      const headers = {
+        ...getHeaders(),
+        // Prevent caching in browser fetch
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
 
-  // Persist to localStorage
-  useEffect(() => {
-    localStorage.setItem('poket_folders', JSON.stringify(folders));
-  }, [folders]);
+      const [foldersRes, snippetsRes] = await Promise.all([
+        fetch(`${API_URL}/api/folders`, { headers }),
+        fetch(`${API_URL}/api/snippets`, { headers })
+      ]);
 
-  useEffect(() => {
-    localStorage.setItem('poket_files', JSON.stringify(files));
-  }, [files]);
+      if (foldersRes.ok && snippetsRes.ok) {
+        const foldersData = await foldersRes.json();
+        const filesData = await snippetsRes.json();
 
-  useEffect(() => {
-    localStorage.setItem('poket_recent', JSON.stringify(recentFiles));
-  }, [recentFiles]);
+        // Normalize MongoDB _id to id for frontend compatibility
+        const normFiles = filesData.map(f => ({ ...f, id: f._id }));
+        setFolders(foldersData.map(f => ({ ...f, id: f._id })));
+        setFiles(normFiles);
 
-
-  const createFolder = (name, parentId = null) => {
-    const newFolder = {
-      id: uuidv4(),
-      name,
-      parentId, // Support for nested folders
-      createdAt: new Date().toISOString(),
-      type: 'folder'
-    };
-    setFolders(prev => [...prev, newFolder]);
-    toast.success(`Folder "${name}" created`);
-    return newFolder.id;
-  };
-
-  const updateFolder = (id, updates) => {
-    setFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
-  };
-
-  const createFile = (name, folderId = null, language = 'javascript') => {
-    const newFile = {
-      id: uuidv4(),
-      name,
-      folderId, // null means root/documents
-      content: '// Start coding here...',
-      codeTitle: 'Untitled Logic', // Separate title for the code snippet itself
-      language,
-      description: '',
-      expectedOutput: '',
-      customMetadata: [], // Array of { id, title, content }
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      type: 'file'
-    };
-    setFiles(prev => [...prev, newFile]);
-    toast.success(`File "${name}" created`);
-    addToRecent(newFile);
-    return newFile.id;
-  };
-
-  const updateFileContent = (id, content) => {
-    setFiles(prev => prev.map(f => {
-      if (f.id === id) {
-        const updated = { ...f, content, updatedAt: new Date().toISOString() };
-        addToRecent(updated);
-        return updated;
+        // Derive recent files from fetched data (sort by lastAccessedAt)
+        const sortedRecent = [...normFiles]
+          .sort((a, b) => new Date(b.lastAccessedAt || 0) - new Date(a.lastAccessedAt || 0))
+          .slice(0, 6);
+        setRecentFiles(sortedRecent);
       }
-      return f;
-    }));
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      toast.error("Failed to sync data");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateFileMetadata = (id, updates) => {
-    setFiles(prev => prev.map(f => {
-      if (f.id === id) {
-        const updated = { ...f, ...updates, updatedAt: new Date().toISOString() };
-        // Update recent files if this file is in there
-        setRecentFiles(recent => recent.map(r => r.id === id ? updated : r));
-        return updated;
+
+  const createFolder = async (name, parentId = null) => {
+    try {
+      const res = await fetch(`${API_URL}/api/folders`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ name, parentId })
+      });
+
+      if (res.ok) {
+        const newFolder = await res.json();
+        const normalized = { ...newFolder, id: newFolder._id };
+        setFolders(prev => [normalized, ...prev]); // Add to top
+        toast.success(`Folder "${name}" created`);
+        return normalized.id;
       }
-      return f;
-    }));
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create folder");
+    }
+  };
+
+  const updateFolder = async (id, updates) => {
+    try {
+      // Optimistic update
+      setFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+
+      await fetch(`${API_URL}/api/folders/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updates)
+      });
+    } catch (e) {
+      fetchData(); // Revert on error
+      toast.error("Failed to update folder");
+    }
+  };
+
+  const createFile = async (name, folderId = null, language = 'javascript') => {
+    try {
+      // Helper to generate initial modules
+      const initialModules = [
+        { id: crypto.randomUUID(), type: 'text', content: '' }, // crypto.randomUUID is native browser API
+        {
+          id: crypto.randomUUID(),
+          type: 'snippet',
+          content: '// Start coding here...',
+          language: language,
+          codeTitle: 'Untitled Logic',
+          description: '',
+          expectedOutput: '',
+          customMetadata: []
+        }
+      ];
+
+      const res = await fetch(`${API_URL}/api/snippets`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          name,
+          folderId,
+          language,
+          content: '// Start coding here...', // Keep legacy content for backward compat/search
+          modules: initialModules,
+          codeTitle: 'Untitled Logic'
+        })
+      });
+
+      if (res.ok) {
+        const newFile = await res.json();
+        const normalized = { ...newFile, id: newFile._id };
+        setFiles(prev => [normalized, ...prev]);
+        toast.success(`File "${name}" created`);
+        addToRecent(normalized);
+        return normalized.id;
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Failed to create file", res.status, errorData);
+        toast.error(`Error: ${errorData.message || 'Failed to create file'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create file");
+    }
+  };
+
+  const updateFileContent = async (id, content) => {
+    // 1. Optimistic update
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, content } : f));
+
+    // 2. Debounce save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/snippets/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ content })
+      })
+        .then(res => {
+          if (!res.ok) console.error("Auto-save failed", res.status);
+        })
+        .catch(e => console.error("Auto-save failed", e));
+    }, 2000);
+  };
+
+  const updateFileMetadata = async (id, updates) => {
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+
+    if (metadataTimeoutRef.current) {
+      clearTimeout(metadataTimeoutRef.current);
+    }
+
+    metadataTimeoutRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/snippets/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updates)
+      })
+        .then(res => {
+          if (!res.ok) console.error("Update failed", res.status);
+        })
+        .catch(e => console.error(e));
+    }, 2000);
+  };
+
+
+  const deleteItem = async (id, type) => {
+    try {
+      const endpoint = type === 'file' ? 'snippets' : 'folders';
+
+      // Optimistic UI update
+      if (type === 'file') {
+        setFiles(prev => prev.filter(f => f.id !== id));
+        // Remove from recent files as well
+        setRecentFiles(prev => prev.filter(f => f.id !== id));
+      } else {
+        setFolders(prev => prev.filter(f => f.id !== id));
+      }
+
+      await fetch(`${API_URL}/api/${endpoint}/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+
+      toast.success("Item deleted");
+      // If folder, technically we should refresh or recursively remove children in state
+      if (type === 'folder') fetchData();
+
+    } catch (e) {
+      fetchData(); // Revert
+      toast.error("Failed to delete");
+    }
   };
 
   const addToRecent = (file) => {
+    const now = new Date();
+
+    // 1. Update Recent List State
     setRecentFiles(prev => {
       const filtered = prev.filter(f => f.id !== file.id);
-      return [file, ...filtered].slice(0, 10); // Keep last 10
-    });
-  };
-
-  const toggleFavorite = (id, type) => {
-    if (type === 'file') {
-      setFiles(prev => prev.map(f => f.id === id ? { ...f, isFavorite: !f.isFavorite } : f));
-    } else {
-      setFolders(prev => prev.map(f => f.id === id ? { ...f, isFavorite: !f.isFavorite } : f));
-    }
-  };
-
-  const togglePin = (id, type) => {
-    if (type === 'file') {
-      setFiles(prev => prev.map(f => f.id === id ? { ...f, isPinned: !f.isPinned } : f));
-    } else {
-      setFolders(prev => prev.map(f => f.id === id ? { ...f, isPinned: !f.isPinned } : f));
-    }
-    // toast.success(type + " Pin toggled"); // User requested to remove message
-  };
-
-
-  // Helper: Recursive delete logic to get ALL IDs to delete
-  const getAllDescendants = (folderId) => {
-    let descendantFileIds = [];
-    let descendantFolderIds = [folderId];
-
-    // Files directly in this folder
-    const directFiles = files.filter(f => f.folderId === folderId);
-    descendantFileIds.push(...directFiles.map(f => f.id));
-
-    // Sub-folders
-    const subFolders = folders.filter(f => f.parentId === folderId);
-
-    subFolders.forEach(sub => {
-      const result = getAllDescendants(sub.id);
-      descendantFileIds.push(...result.fileIds);
-      descendantFolderIds.push(...result.folderIds);
+      return [{ ...file, lastAccessedAt: now }, ...filtered].slice(0, 6);
     });
 
-    return { fileIds: descendantFileIds, folderIds: descendantFolderIds };
+    // 2. Persist to DB (bypass debounce for immediate interaction log)
+    fetch(`${API_URL}/api/snippets/${file.id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ lastAccessedAt: now })
+    }).catch(e => console.error("Failed to update access time", e));
   };
 
-  // Helper: Get formatted list of files for Delete Modal (recursively)
-  const getFlatFileList = (folderId) => {
-    const allFiles = [];
+  // --- Getters & Helpers (Same as before) ---
 
-    const traverse = (currentId) => {
-      // Files in current
-      const fs = files.filter(f => f.folderId === currentId);
-      allFiles.push(...fs);
-
-      // Folders in current
-      const subs = folders.filter(f => f.parentId === currentId);
-      subs.forEach(sub => traverse(sub.id));
-    }
-
-    traverse(folderId);
-    return allFiles;
-  };
-
-  const deleteItem = (id, type) => {
-    if (type === 'file') {
-      setFiles(prev => prev.filter(f => f.id !== id));
-      setRecentFiles(prev => prev.filter(f => f.id !== id));
-      toast.success("File deleted");
-    } else {
-      // Recursive delete
-      const { fileIds, folderIds } = getAllDescendants(id);
-
-      setFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
-      setRecentFiles(prev => prev.filter(f => !fileIds.includes(f.id)));
-      setFolders(prev => prev.filter(f => !folderIds.includes(f.id)));
-      toast.success("Folder and contents deleted");
-    }
-  };
-
-  const moveItem = (itemId, type, targetFolderId) => {
-    if (type === 'file') {
-      setFiles(prev => prev.map(f => f.id === itemId ? { ...f, folderId: targetFolderId, updatedAt: new Date().toISOString() } : f));
-    } else {
-      if (itemId === targetFolderId) return; // Prevent self-move
-      // Prevent moving into own child (cycle) - Simple check
-      // For now assuming user won't do deep cyclic moves in simplified UI, but safe to add later.
-      setFolders(prev => prev.map(f => f.id === itemId ? { ...f, parentId: targetFolderId } : f));
-    }
-    toast.success("Moved successfully");
-  };
-
-  // Sort Helper
   const sortItems = (items) => {
     return [...items].sort((a, b) => {
-      // Pinned first
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      // Then Alphabetical
       return a.name.localeCompare(b.name);
     });
   };
 
-  // Getters for Recursive Logic with Sorting
   const getFolderContents = (folderId) => {
     const childFolders = folders.filter(f => f.parentId === folderId);
+    // MongoDB stores IDs as strings usually, compare loosely or ensure formatting
     const childFiles = files.filter(f => f.folderId === folderId);
     return { folders: sortItems(childFolders), files: sortItems(childFiles) };
   };
@@ -229,9 +273,40 @@ export const FileSystemProvider = ({ children }) => {
     return { folders: sortItems(rootCtxFolders), files: sortItems(rootCtxFiles) };
   };
 
-  // Legacy support getters (optional, but good for safety)
-  const getRootFiles = () => files.filter(f => !f.folderId);
-  const getFolderFiles = (folderId) => files.filter(f => f.folderId === folderId);
+  const getFlatFileList = (folderId) => {
+    const allFiles = [];
+    const traverse = (currentId) => {
+      const fs = files.filter(f => f.folderId === currentId);
+      allFiles.push(...fs);
+      const subs = folders.filter(f => f.parentId === currentId);
+      subs.forEach(sub => traverse(sub.id));
+    }
+    traverse(folderId);
+    return allFiles;
+  };
+
+  const toggleFavorite = (id, type) => {
+    // Implement logic to call update API with isFavorite: !current
+    const item = type === 'file' ? files.find(f => f.id === id) : folders.find(f => f.id === id);
+    if (item) {
+      if (type === 'file') updateFileMetadata(id, { isFavorite: !item.isFavorite });
+      else updateFolder(id, { isFavorite: !item.isFavorite });
+    }
+  };
+
+  const togglePin = (id, type) => {
+    const item = type === 'file' ? files.find(f => f.id === id) : folders.find(f => f.id === id);
+    if (item) {
+      if (type === 'file') updateFileMetadata(id, { isPinned: !item.isPinned });
+      else updateFolder(id, { isPinned: !item.isPinned });
+    }
+  };
+
+  const moveItem = (itemId, type, targetFolderId) => {
+    if (type === 'file') updateFileMetadata(itemId, { folderId: targetFolderId });
+    else updateFolder(itemId, { parentId: targetFolderId });
+  };
+
 
   return (
     <FileSystemContext.Provider value={{
@@ -243,7 +318,7 @@ export const FileSystemProvider = ({ children }) => {
       createFile,
       updateFileContent,
       updateFileMetadata,
-      addToRecent, // Exposed for tracking visits
+      addToRecent,
       getFolderContents,
       getRootContents,
       deleteItem,
@@ -251,8 +326,9 @@ export const FileSystemProvider = ({ children }) => {
       toggleFavorite,
       togglePin,
       getFlatFileList,
-      getRootFiles, // Keep for backward compatibility if needed
-      getFolderFiles // Keep for backward compatibility if needed
+      getRootFiles: () => files.filter(f => !f.folderId),
+      getFolderFiles: (id) => files.filter(f => f.folderId === id),
+      isLoading
     }}>
       {children}
     </FileSystemContext.Provider>

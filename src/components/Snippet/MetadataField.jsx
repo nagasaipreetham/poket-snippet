@@ -10,7 +10,8 @@ const MetadataField = ({
   onTitleChange,
   placeholder = "Content...",
   className = "",
-  initialIsOpen = true
+  initialIsOpen = true,
+  autoFocus = false
 }) => {
   const [isOpen, setIsOpen] = useState(initialIsOpen);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -103,6 +104,7 @@ const MetadataField = ({
             placeholder={placeholder}
             className="w-full min-h-[100px] bg-transparent text-sm text-text font-mono resize-y outline-none border-none placeholder-text-muted/50"
             onClick={(e) => e.stopPropagation()}
+            autoFocus={autoFocus}
           />
         </div>
       )}

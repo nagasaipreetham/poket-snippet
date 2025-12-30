@@ -8,14 +8,18 @@ import { ArrowLeft, File } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 
-const SnippetDetail = () => {
+const SnippetDetailContent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { files, updateFileMetadata, addToRecent } = useFileSystem();
+  const { files, updateFileMetadata, addToRecent, isLoading } = useFileSystem();
 
   const [file, setFile] = useState(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const nameInputRef = useRef(null);
+
+  // Focus Management
+  const [activeFocusId, setActiveFocusId] = useState(null);
+  const initialFocusSet = useRef(false);
 
   // Drag & Drop State
   const [isDragging, setIsDragging] = useState(false);
@@ -25,6 +29,8 @@ const SnippetDetail = () => {
   const moduleRefs = useRef({});
 
   useEffect(() => {
+    if (isLoading) return; // Wait for initial load
+
     const foundFile = files.find(f => f.id === id);
     if (foundFile) {
       let modules = foundFile.modules ? [...foundFile.modules] : [];
@@ -42,18 +48,27 @@ const SnippetDetail = () => {
           customMetadata: foundFile.customMetadata || []
         };
         const initialText = { id: uuidv4(), type: 'text', content: '' };
-        const safetyText = { id: uuidv4(), type: 'text', content: '' };
-        modules = [initialText, legacySnippet, safetyText];
+        // Clean up new files by NOT adding a bottom empty text module
+        // const safetyText = { id: uuidv4(), type: 'text', content: '' };
+        modules = [initialText, legacySnippet];
         updateFileMetadata(foundFile.id, { modules: modules });
       }
 
       setFile({ ...foundFile, modules: modules });
       addToRecent(foundFile);
+
+      // Handle Initial Focus (Only focusing top text if empty)
+      if (!initialFocusSet.current) {
+        if (modules.length > 0 && modules[0].type === 'text' && !modules[0].content) {
+          setActiveFocusId(modules[0].id);
+        }
+        initialFocusSet.current = true;
+      }
     } else {
       toast.error("File not found");
       navigate('/');
     }
-  }, [id, files, navigate]);
+  }, [id, files, navigate, isLoading]);
 
   useEffect(() => { if (isEditingName && nameInputRef.current) nameInputRef.current.focus(); }, [isEditingName]);
 
@@ -95,6 +110,10 @@ const SnippetDetail = () => {
     } else {
       newModule = { id: uuidv4(), type: 'text', content: '' };
     }
+
+    // Explicitly set focus to the new module
+    setActiveFocusId(newModule.id);
+
     newModules.splice(index + 1, 0, newModule);
 
     const updatedFile = { ...file, modules: newModules };
@@ -199,7 +218,7 @@ const SnippetDetail = () => {
                     module={module}
                     onUpdate={(updates) => handleModuleUpdate(index, updates)}
                     onAddNext={() => handleAddNextModule(index, 'text')}
-                    autoFocus={!module.content}
+                    autoFocus={module.id === activeFocusId}
                   />
                 ) : (
                   <SnippetModule
@@ -220,6 +239,11 @@ const SnippetDetail = () => {
       </div>
     </div>
   );
+};
+
+const SnippetDetail = () => {
+  const { id } = useParams();
+  return <SnippetDetailContent key={id} />;
 };
 
 export default SnippetDetail;

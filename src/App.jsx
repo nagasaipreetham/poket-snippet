@@ -22,8 +22,8 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <FileSystemProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <FileSystemProvider>
         <Toaster position="bottom-left" toastOptions={{
           style: { background: '#333', color: '#fff' }
         }} />
@@ -42,8 +42,8 @@ function App() {
             <Route path="folder/:id" element={<FolderDetail />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-    </FileSystemProvider>
+      </FileSystemProvider>
+    </BrowserRouter>
   );
 }
 

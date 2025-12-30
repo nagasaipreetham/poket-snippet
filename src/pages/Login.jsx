@@ -13,26 +13,37 @@ const Login = () => {
     onSuccess: async (tokenResponse) => {
       try {
         setLoading(true);
-        // Fetch user details using the access token
-        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        const accessToken = tokenResponse.access_token;
+
+        // AUTHENTICATE WITH BACKEND
+        const backendResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google`, {
+          method: 'POST',
           headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ access_token: accessToken }),
         });
 
-        const profile = await userInfoResponse.json();
+        if (!backendResponse.ok) {
+          const errorData = await backendResponse.json().catch(() => ({}));
+          console.error('Backend Auth Failed:', backendResponse.status, backendResponse.statusText, errorData);
+          throw new Error(errorData.msg || 'Backend authentication failed');
+        }
 
-        // Save user to context
+        const user = await backendResponse.json();
+
+        // Save user to context (include accessToken for future API calls)
         setAuthUser({
-          ...profile,
-          accessToken: tokenResponse.access_token
+          ...user,
+          accessToken: accessToken
         });
 
-        toast.success(`Welcome back, ${profile.name}!`);
-        navigate('/'); // Navigate to home after successful login
+        toast.success(`Welcome back, ${user.name}!`);
+        navigate('/');
       } catch (error) {
-        console.error('Failed to fetch user info:', error);
-        toast.error('Failed to get user information.');
+        console.error('Login Error:', error);
+        toast.error('Authentication failed. Please try again.');
+        setAuthUser(null);
       } finally {
         setLoading(false);
       }
