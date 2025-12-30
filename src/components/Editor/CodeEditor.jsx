@@ -4,7 +4,7 @@ import Editor, { loader } from '@monaco-editor/react';
 // Configure Monaco loader if needed (optional)
 // loader.config({ paths: { vs: '...' } });
 
-const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark' }) => {
+const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark', fontSize = 14 }) => {
   const handleEditorChange = (value, event) => {
     onChange(value);
   };
@@ -35,7 +35,7 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
         theme="vs-dark" // Will be overridden by onMount
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: fontSize,
           fontFamily: 'Fira Code, monospace',
           scrollBeyondLastLine: false,
           automaticLayout: true, // Re-enabled for reliable rendering (Safe Mode prevents crashes)

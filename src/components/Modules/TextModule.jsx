@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const TextModule = ({ module, onUpdate, onAddNext, autoFocus }) => {
+  const { user } = useAuth();
   const textareaRef = useRef(null);
 
   // Auto-resize textarea
@@ -33,7 +35,8 @@ const TextModule = ({ module, onUpdate, onAddNext, autoFocus }) => {
         onChange={(e) => onUpdate({ content: e.target.value })}
         onKeyDown={handleKeyDown}
         placeholder="Type here..."
-        className="w-full bg-transparent text-text outline-none resize-none overflow-hidden text-base leading-relaxed placeholder-white/20 py-1"
+        style={{ fontSize: `${user?.settings?.textModuleFontSize || 16}px` }}
+        className="w-full bg-transparent text-text outline-none resize-none overflow-hidden leading-relaxed placeholder-white/20 py-1"
         rows={1}
       />
     </div>

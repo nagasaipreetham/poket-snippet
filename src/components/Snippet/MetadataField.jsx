@@ -11,7 +11,8 @@ const MetadataField = ({
   placeholder = "Content...",
   className = "",
   initialIsOpen = true,
-  autoFocus = false
+  autoFocus = false,
+  fontSize
 }) => {
   const [isOpen, setIsOpen] = useState(initialIsOpen);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -102,7 +103,8 @@ const MetadataField = ({
             value={content || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full min-h-[100px] bg-transparent text-sm text-text font-mono resize-y outline-none border-none placeholder-text-muted/50"
+            style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}
+            className={`w-full min-h-[100px] bg-transparent text-text font-mono resize-y outline-none border-none placeholder-text-muted/50 ${!fontSize ? 'text-sm' : ''}`}
             onClick={(e) => e.stopPropagation()}
             autoFocus={autoFocus}
           />

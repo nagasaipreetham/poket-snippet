@@ -6,7 +6,7 @@ import SidebarItem from './SidebarItem';
 import CreateButton from '../UI/CreateButton';
 
 import { useAuth } from '../../context/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -120,6 +120,14 @@ const Sidebar = () => {
           {/* Logout Dropdown */}
           {showUserMenu && (
             <div className="absolute top-full left-2 right-2 mt-1 bg-[#252525] border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <Link
+                to="/settings"
+                onClick={() => setShowUserMenu(false)}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-white hover:bg-white/5 hover:text-accent transition-colors text-left"
+              >
+                <Settings size={16} />
+                <span>Settings</span>
+              </Link>
               <button
                 onClick={() => {
                   logout();

@@ -6,6 +6,8 @@ import useCompilerStore from '../../store/compilerStore';
 import { GoogleGenAI } from "@google/genai";
 import toast from 'react-hot-toast';
 
+import { useAuth } from '../../context/AuthContext';
+
 const CompilerInterface = () => {
   const [language, setLanguage] = useState('javascript');
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -18,6 +20,10 @@ const CompilerInterface = () => {
   const [activeBottomTab, setActiveBottomTab] = useState('output');
   const [bottomHeight, setBottomHeight] = useState(200);
   const [isDragging, setIsDragging] = useState(false);
+
+  // User Settings
+  const { user } = useAuth();
+  const editorFontSize = user?.settings?.compilerFontSize || 14;
 
   const [isRunning, setIsRunning] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
@@ -421,6 +427,7 @@ const CompilerInterface = () => {
           value={code}
           onChange={handleEditorChange}
           theme="vs-dark"
+          fontSize={editorFontSize}
         />
       </div>
 

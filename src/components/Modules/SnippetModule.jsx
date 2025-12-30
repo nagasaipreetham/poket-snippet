@@ -8,9 +8,15 @@ import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import hljs from 'highlight.js'; // Reverted: Auto-detection via highlight.js
 
+import { useAuth } from '../../context/AuthContext';
+
 const SnippetModule = ({ module, onUpdate, isDragging }) => {
   const { setCode: setCompilerCode } = useCompilerStore();
   const { setInput: setChatInput, setMode: setChatMode, setIsOpen, input: chatInput } = useChatStore();
+  const { user } = useAuth();
+
+  const editorHeight = user?.settings?.snippetModuleHeight || 500;
+  const editorFontSize = user?.settings?.snippetModuleFontSize || 14;
 
   const handleRunSnippet = () => {
     if (!module.content || !module.content.trim()) {
@@ -136,7 +142,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-[500px] border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e] mb-8">
+    <div className="flex flex-col border border-border rounded-xl overflow-hidden shadow-sm bg-[#1e1e1e] mb-8">
       {/* Block Header */}
       <div className="h-10 bg-[#1e1e1e] flex items-center justify-between px-4 border-b border-white/10 shrink-0">
         <div
@@ -198,14 +204,15 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
         </div>
       </div>
 
-      {/* Editor Area - Fixed Height for Stability */}
+      {/* Editor Area - Dynamic Height */}
       {/* SAFE MODE: If dragging, replace heavy editor with static preview to prevent crashes */}
-      <div className="h-[500px] w-full bg-[#191919] relative group">
+      <div className="w-full bg-[#191919] relative group" style={{ height: `${editorHeight}px` }}>
         {!isDragging ? (
           <CodeEditor
             language={language}
             value={module.content}
             onChange={handleEditorChange}
+            fontSize={editorFontSize}
           />
         ) : (
           <div className="h-full w-full p-4 overflow-hidden bg-[#1e1e1e] flex flex-col">
@@ -229,6 +236,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               className="border-white/10 bg-white/5"
               initialIsOpen={focusTarget === 'description'}
               autoFocus={focusTarget === 'description'}
+              fontSize={user?.settings?.textModuleFontSize}
             />
           )}
           {isExpectedOutputActive && (
@@ -240,6 +248,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               className="border-white/10 bg-white/5"
               initialIsOpen={focusTarget === 'expectedOutput'}
               autoFocus={focusTarget === 'expectedOutput'}
+              fontSize={user?.settings?.textModuleFontSize}
             />
           )}
           {customMetadata.map(field => (
@@ -254,6 +263,7 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
               className="border-white/10 bg-white/5"
               initialIsOpen={focusTarget === field.id}
               autoFocus={focusTarget === field.id}
+              fontSize={user?.settings?.textModuleFontSize}
             />
           ))}
         </div>
