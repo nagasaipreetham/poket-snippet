@@ -179,6 +179,11 @@ const UserSettings = () => {
       setShowDeleteWorkspaceModal(false);
       setDeleteInput('');
       setDeleteError('');
+
+      // Reload to clear all local state and refetch empty data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       toast.error("Failed to delete workspace");
     } finally {
