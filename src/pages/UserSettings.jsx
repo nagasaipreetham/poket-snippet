@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Pencil, Save, AlertTriangle, File, ArrowLeft, Settings } from 'lucide-react';
+import { Pencil, Save, AlertTriangle, File, ArrowLeft, Settings, LogOut, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import ImageCropper from '../components/Utils/ImageCropper';
 
 const UserSettings = () => {
-  const { user, updateProfile, deleteWorkspace, deleteAccount } = useAuth();
+  const { user, updateProfile, deleteWorkspace, deleteAccount, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   // Local state for form fields
   const [name, setName] = useState('');
@@ -19,6 +21,13 @@ const UserSettings = () => {
     compilerFontSize: 14,
     snippetModuleHeight: 500
   });
+
+  // Profile Picture State
+  const [displayImage, setDisplayImage] = useState("https://via.placeholder.com/150");
+  const [imageSrc, setImageSrc] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  // Remove Picture State
+  const [showRemovePicConfirm, setShowRemovePicConfirm] = useState(false);
 
   // Modals state
   const [showDeleteWorkspaceModal, setShowDeleteWorkspaceModal] = useState(false);
@@ -36,6 +45,8 @@ const UserSettings = () => {
         compilerFontSize: user.settings?.compilerFontSize || 14,
         snippetModuleHeight: user.settings?.snippetModuleHeight || 500
       });
+      // Prioritize custom picture, fallback to Google picture
+      setDisplayImage(user.custom_profile_picture || user.picture || "https://via.placeholder.com/150");
     }
   }, [user]);
 
@@ -64,6 +75,95 @@ const UserSettings = () => {
     }
   };
 
+  const handleSignOut = () => {
+    logout();
+    navigate('/login');
+    toast.success("Signed out successfully");
+  };
+
+  // --- Profile Picture Logic ---
+
+  const handleEditClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const onFileChange = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setImageSrc(reader.result);
+        setShowCropModal(true);
+      });
+      reader.readAsDataURL(file);
+      // Reset input so same file selection triggers change again
+      e.target.value = null;
+    }
+  };
+
+  const handleCropSave = async (croppedBlob, cropSettings) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', croppedBlob);
+      formData.append('userId', user._id);
+      formData.append('cropSettings', JSON.stringify(cropSettings));
+
+      // Optimistic Update
+      const objectUrl = URL.createObjectURL(croppedBlob);
+      setDisplayImage(objectUrl);
+      setShowCropModal(false);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload/profile-picture`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+
+      const data = await response.json();
+      toast.success("Profile picture updated!");
+
+      // Sync with context
+      await updateProfile({
+        custom_profile_picture: data.url,
+        profile_picture_settings: cropSettings
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload image");
+      // Revert on failure (optional, but good UX)
+      setDisplayImage(user.custom_profile_picture || user.picture || "https://via.placeholder.com/150");
+    }
+  };
+
+  const handleRemovePicture = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload/profile-picture/${user._id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error("Remove failed");
+
+      toast.success("Profile picture removed");
+      setShowRemovePicConfirm(false);
+
+      // Sync with context
+      await updateProfile({
+        custom_profile_picture: null,
+        profile_picture_settings: {}
+      });
+
+      // Revert display to default/google pic
+      setDisplayImage(user.picture || "https://via.placeholder.com/150");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to remove picture");
+    }
+  };
+
+  // --- Deletion Logic ---
+
   const handleDeleteWorkspace = async () => {
     if (deleteInput !== 'DELETE-ENTIRE-DATA') {
       setDeleteError('Input dosent match');
@@ -84,7 +184,7 @@ const UserSettings = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const requiredText = `DELETE-${user.name}`; // Prompt says DELETE-<username>
+    const requiredText = `DELETE-${user.name}`;
     if (deleteInput !== requiredText) {
       setDeleteError('Input dosent match');
       return;
@@ -104,7 +204,6 @@ const UserSettings = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#191919] text-text overflow-hidden">
-      {/* Header - Identical to SnippetDetail Top Bar */}
       <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#191919] sticky top-0 z-50 shrink-0 shadow-sm">
         <div className="flex items-center space-x-4">
           <button
@@ -125,19 +224,69 @@ const UserSettings = () => {
         </div>
       </header>
 
-      {/* Main Content - Flex Row */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Section - Profile Image (30% width roughly) */}
+        {/* Left Section - Profile Image */}
         <div className="w-[30%] min-w-[300px] px-8 py-12 flex flex-col items-center border-r border-white/5 bg-[#191919]/50">
           <div className="flex flex-col items-center gap-6">
             <img
-              src={user.picture || "https://via.placeholder.com/150"}
+              src={displayImage}
               alt="Profile"
-              className="w-48 h-48 rounded-full object-cover border-4 border-[#252526] shadow-2xl"
+              className="w-48 h-48 rounded-full object-cover border-4 border-[#252526] shadow-2xl relative z-10"
             />
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-[#252526] hover:bg-[#2F2F2F] border border-white/10 hover:border-white/20 rounded-full transition-all text-sm font-medium text-white shadow-lg active:scale-95 group">
-              Edit <Pencil size={14} className="text-accent group-hover:scale-110 transition-transform" />
-            </button>
+
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={onFileChange}
+              className="hidden"
+            />
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#252526] hover:bg-[#2F2F2F] border border-white/10 hover:border-white/20 rounded-full transition-all text-sm font-medium text-white shadow-lg active:scale-95 group"
+              >
+                Edit <Pencil size={14} className="text-accent group-hover:scale-110 transition-transform" />
+              </button>
+
+              {user.custom_profile_picture && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowRemovePicConfirm(!showRemovePicConfirm)}
+                    className="p-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-full transition-all text-red-500 hover:text-red-400 shadow-lg active:scale-95 group"
+                    title="Remove Picture"
+                  >
+                    <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+                  </button>
+
+                  {showRemovePicConfirm && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowRemovePicConfirm(false)}
+                      />
+                      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-48 bg-[#252526] border border-red-500/30 rounded-xl shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">
+                        <p className="text-[10px] text-white/50 text-center font-bold uppercase tracking-widest mb-1">Remove Picture?</p>
+                        <button
+                          onClick={handleRemovePicture}
+                          className="w-full py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded flex items-center justify-center gap-1"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setShowRemovePicConfirm(false)}
+                          className="w-full py-1.5 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="mt-4 text-center">
             <h3 className="text-xl font-bold text-white tracking-wide">{user.name}</h3>
@@ -145,7 +294,7 @@ const UserSettings = () => {
           </div>
         </div>
 
-        {/* Right Section - Settings (70% width) */}
+        {/* Right Section - Settings */}
         <div className="flex-1 px-12 py-12 overflow-y-auto custom-scrollbar pb-[100px]">
           <div className="max-w-3xl space-y-12">
 
@@ -178,7 +327,7 @@ const UserSettings = () => {
                   </div>
                 </div>
 
-                {/* Email - Read Only */}
+                {/* Email */}
                 <div className="space-y-2 opacity-75">
                   <label className="text-xs font-bold text-text-muted uppercase tracking-widest pl-1">Email Address</label>
                   <div className="w-full bg-[#252526]/50 border border-white/5 rounded-lg py-3 px-4 text-sm text-text-muted flex items-center justify-between cursor-not-allowed">
@@ -193,7 +342,6 @@ const UserSettings = () => {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-white tracking-tight pl-1">Customize</h2>
               <div className="border border-white/10 rounded-xl p-8 space-y-8 bg-[#1e1e1e]/30">
-                {/* Text Module Font Size */}
                 <SettingSlider
                   label="Text Module Font Size"
                   value={settings.textModuleFontSize}
@@ -202,8 +350,6 @@ const UserSettings = () => {
                   onChange={(val) => handleSettingChange('textModuleFontSize', val)}
                   onCommit={(val) => handleSaveSettings('textModuleFontSize', val)}
                 />
-
-                {/* Snippet Module Font Size */}
                 <SettingSlider
                   label="Snippet Editor Font Size"
                   value={settings.snippetModuleFontSize}
@@ -212,8 +358,6 @@ const UserSettings = () => {
                   onChange={(val) => handleSettingChange('snippetModuleFontSize', val)}
                   onCommit={(val) => handleSaveSettings('snippetModuleFontSize', val)}
                 />
-
-                {/* Compiler Font Size */}
                 <SettingSlider
                   label="Compiler Font Size"
                   value={settings.compilerFontSize}
@@ -222,8 +366,6 @@ const UserSettings = () => {
                   onChange={(val) => handleSettingChange('compilerFontSize', val)}
                   onCommit={(val) => handleSaveSettings('compilerFontSize', val)}
                 />
-
-                {/* Snippet Height */}
                 <SettingSlider
                   label="Snippet Editor Height (px)"
                   value={settings.snippetModuleHeight}
@@ -233,6 +375,16 @@ const UserSettings = () => {
                   onCommit={(val) => handleSaveSettings('snippetModuleHeight', val)}
                 />
               </div>
+            </div>
+
+            {/* Sign Out */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-all text-sm font-medium text-red-500 hover:text-red-400 shadow-lg active:scale-95"
+              >
+                <LogOut size={16} /> Sign Out
+              </button>
             </div>
 
             {/* Group 3: Danger Zone */}
@@ -254,9 +406,7 @@ const UserSettings = () => {
                     Delete
                   </button>
                 </div>
-
                 <div className="h-px bg-red-500/20" />
-
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-bold text-red-400 text-sm">Delete account permanently</h4>
@@ -275,7 +425,16 @@ const UserSettings = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Crop Modal */}
+      {showCropModal && imageSrc && (
+        <ImageCropper
+          imageSrc={imageSrc}
+          onCancel={() => { setShowCropModal(false); setImageSrc(null); if (fileInputRef.current) fileInputRef.current.value = null; }}
+          onSave={handleCropSave}
+        />
+      )}
+
+      {/* Delete Modals */}
       {showDeleteWorkspaceModal && (
         <DeleteModal
           title="Delete entire workspace"
@@ -294,7 +453,7 @@ const UserSettings = () => {
         <DeleteModal
           title="Delete Account permanently"
           description="By continuing this your account will be deleted with your entire data including files, folders, snippets, and miscellaneous. You are responsible for your own actions"
-          confirmationText={`DELETE-${user.name}`} // Using user.name as username
+          confirmationText={`DELETE-${user.name}`}
           inputValue={deleteInput}
           setInputValue={setDeleteInput}
           onClose={() => setShowDeleteAccountModal(false)}
@@ -306,8 +465,6 @@ const UserSettings = () => {
     </div>
   );
 };
-
-// Helper Components
 
 const SettingSlider = ({ label, value, min, max, onChange, onCommit }) => {
   return (
@@ -350,11 +507,11 @@ const DeleteModal = ({ title, description, confirmationText, inputValue, setInpu
   return (
     <div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose} // Close on click outside
+      onClick={onClose}
     >
       <div
         className="bg-[#1e1e1e] border border-red-500/30 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
-        onClick={(e) => e.stopPropagation()} // Prevent close on modal click
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <h3 className="text-xl font-bold text-white mb-2">{title}</h3>

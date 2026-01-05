@@ -128,16 +128,6 @@ const Sidebar = () => {
                 <Settings size={16} />
                 <span>Settings</span>
               </Link>
-              <button
-                onClick={() => {
-                  logout();
-                  navigate('/login');
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors text-left"
-              >
-                <LogOut size={16} />
-                <span>Sign Out</span>
-              </button>
             </div>
           )}
         </div>

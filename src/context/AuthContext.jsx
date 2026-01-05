@@ -17,7 +17,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser && parsedUser.accessToken) {
+          setUser(parsedUser);
+        } else {
+          // Invalid user data
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      } catch (e) {
+        localStorage.removeItem('user');
+        setUser(null);
+      }
     }
     setLoading(false);
   }, []);

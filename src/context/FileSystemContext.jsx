@@ -40,9 +40,10 @@ export const FileSystemProvider = ({ children }) => {
 
   const fetchData = async () => {
     try {
+      if (!user?.accessToken) return;
+
       const headers = {
         ...getHeaders(),
-        // Prevent caching in browser fetch
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
@@ -53,24 +54,33 @@ export const FileSystemProvider = ({ children }) => {
         fetch(`${API_URL}/api/snippets`, { headers })
       ]);
 
-      if (foldersRes.ok && snippetsRes.ok) {
-        const foldersData = await foldersRes.json();
-        const filesData = await snippetsRes.json();
-
-        // Normalize MongoDB _id to id for frontend compatibility
-        const normFiles = filesData.map(f => ({ ...f, id: f._id }));
-        setFolders(foldersData.map(f => ({ ...f, id: f._id })));
-        setFiles(normFiles);
-
-        // Derive recent files from fetched data (sort by lastAccessedAt)
-        const sortedRecent = [...normFiles]
-          .sort((a, b) => new Date(b.lastAccessedAt || 0) - new Date(a.lastAccessedAt || 0))
-          .slice(0, 6);
-        setRecentFiles(sortedRecent);
+      if (foldersRes.status === 401 || snippetsRes.status === 401) {
+        toast.error("Session expired, please sign in again");
+        // Optionally logout here if we had access to logout function
+        return;
       }
+
+      if (!foldersRes.ok || !snippetsRes.ok) {
+        throw new Error(`Fetch failed: Folders ${foldersRes.status}, Snippets ${snippetsRes.status}`);
+      }
+
+      const foldersData = await foldersRes.json();
+      const filesData = await snippetsRes.json();
+
+      // Normalize MongoDB _id to id for frontend compatibility
+      const normFiles = filesData.map(f => ({ ...f, id: f._id }));
+      setFolders(foldersData.map(f => ({ ...f, id: f._id })));
+      setFiles(normFiles);
+
+      // Derive recent files from fetched data (sort by lastAccessedAt)
+      const sortedRecent = [...normFiles]
+        .sort((a, b) => new Date(b.lastAccessedAt || 0) - new Date(a.lastAccessedAt || 0))
+        .slice(0, 6);
+      setRecentFiles(sortedRecent);
+
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      toast.error("Failed to sync data");
+      toast.error("Failed to sync data. Please refresh.");
     } finally {
       setIsLoading(false);
     }
