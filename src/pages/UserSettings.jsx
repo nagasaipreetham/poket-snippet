@@ -118,7 +118,10 @@ const UserSettings = () => {
         body: formData
       });
 
-      if (!response.ok) throw new Error("Upload failed");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || errData.msg || "Upload failed");
+      }
 
       const data = await response.json();
       toast.success("Profile picture updated!");
@@ -131,7 +134,7 @@ const UserSettings = () => {
 
     } catch (error) {
       console.error(error);
-      toast.error("Failed to upload image");
+      toast.error(`Error: ${error.message}`);
       // Revert on failure (optional, but good UX)
       setDisplayImage(user.custom_profile_picture || user.picture || "https://via.placeholder.com/150");
     }
@@ -231,6 +234,16 @@ const UserSettings = () => {
             <img
               src={displayImage}
               alt="Profile"
+              onError={(e) => {
+                // Prevent infinite loop if fallback fails
+                if (displayImage.includes("via.placeholder.com")) return;
+
+                console.error("Image Load Error. URL:", displayImage);
+                // toast.error("Failed to load image. Check public access."); // Commenting out to stop spam
+
+                // Update state to fallback to stop re-trying the bad URL
+                setDisplayImage("https://via.placeholder.com/150?text=Error");
+              }}
               className="w-48 h-48 rounded-full object-cover border-4 border-[#252526] shadow-2xl relative z-10"
             />
 

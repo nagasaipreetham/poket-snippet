@@ -55,8 +55,13 @@ export const FileSystemProvider = ({ children }) => {
       ]);
 
       if (foldersRes.status === 401 || snippetsRes.status === 401) {
+        console.error("Session expired details:", {
+          foldersStatus: foldersRes.status,
+          snippetsStatus: snippetsRes.status,
+          hasToken: !!user?.accessToken,
+          tokenPreview: user?.accessToken?.substring(0, 10) + '...'
+        });
         toast.error("Session expired, please sign in again");
-        // Optionally logout here if we had access to logout function
         return;
       }
 

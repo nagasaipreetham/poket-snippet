@@ -42,7 +42,15 @@ const Login = () => {
         navigate('/');
       } catch (error) {
         console.error('Login Error:', error);
-        toast.error('Authentication failed. Please try again.');
+
+        let errorMessage = 'Authentication failed. Please try again.';
+        if (error.message && error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to server. Is the backend running?';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
         setAuthUser(null);
       } finally {
         setLoading(false);
