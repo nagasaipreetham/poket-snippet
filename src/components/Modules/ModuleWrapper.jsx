@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, Trash2 } from 'lucide-react';
 import { motion, useDragControls } from 'framer-motion';
 
 const ModuleWrapper = ({
@@ -12,12 +12,14 @@ const ModuleWrapper = ({
   isDragging, // Global dragging state
   setIsDragging,
   scrollContainerRef, // Added prop
+  onDelete, // Added prop for delete action
   children
 }) => {
   const controls = useDragControls();
   const [isHovered, setIsHovered] = useState(false);
   const [isHandPressed, setIsHandPressed] = useState(false);
   const [isSelfDragging, setIsSelfDragging] = useState(false);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const wrapperRef = useRef(null);
 
   // Auto-scroll State
@@ -88,8 +90,25 @@ const ModuleWrapper = ({
     return () => stopAutoScroll();
   }, []);
 
+  // Close Delete Menu on Click Outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowDeleteMenu(false);
+      }
+    };
+
+    if (showDeleteMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDeleteMenu]);
+
   // Controls Visibility Logic
-  const showControls = (isHovered && !isDragging) || isSelfDragging;
+  // Show controls if hovered OR dragging OR if the delete menu (selected mode) is active
+  const showControls = (isHovered && !isDragging) || isSelfDragging || showDeleteMenu;
 
   return (
     <motion.div
@@ -150,14 +169,37 @@ const ModuleWrapper = ({
 
           <div
             onPointerDown={(e) => {
-              controls.start(e);
-              e.preventDefault();
+              // Only start drag if left click
+              if (e.button === 0) {
+                controls.start(e);
+                e.preventDefault();
+              }
             }}
-            className={`p-1.5 text-text-muted hover:text-white cursor-grab active:cursor-grabbing rounded transition-colors touch-none ${isHandPressed ? 'text-accent' : ''}`}
-            title="Drag to Reorder"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDeleteMenu(prev => !prev);
+            }}
+            className={`relative p-1.5 text-text-muted hover:text-white cursor-grab active:cursor-grabbing rounded transition-colors touch-none ${isHandPressed || showDeleteMenu ? 'text-accent' : ''}`}
+            title="Drag to Reorder (Right-click to Select)"
             style={{ touchAction: 'none' }}
           >
             <GripVertical size={18} className={isHandPressed ? "scale-90" : ""} />
+
+            {/* Delete Menu Overlay */}
+            {showDeleteMenu && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                  setShowDeleteMenu(false);
+                }}
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-1.5 flex items-center justify-center bg-surface border border-border hover:bg-red-500/20 text-text-muted hover:text-red-500 rounded-md shadow-lg z-50 transition-colors"
+                title="Delete Module"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
 

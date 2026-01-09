@@ -28,6 +28,81 @@ const SnippetDetailContent = () => {
   const containerRef = useRef(null);
   const moduleRefs = useRef({});
 
+  // Undo/Redo History
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isDirty = useRef(false); // Track content changes since last history commit
+
+  // Initialize history when file loads
+  useEffect(() => {
+    if (file && history.length === 0) {
+      setHistory([file.modules]);
+      setHistoryIndex(0);
+    }
+  }, [file]);
+
+  const commitToHistory = (newModules) => {
+    const currentHistory = history.slice(0, historyIndex + 1);
+    const nextHistory = [...currentHistory];
+
+    // If content was modified (typed) since last commit, save that state first
+    if (isDirty.current) {
+      nextHistory.push(file.modules);
+      isDirty.current = false;
+    }
+
+    nextHistory.push(newModules);
+
+    // Limit history size
+    if (nextHistory.length > 50) {
+      const diff = nextHistory.length - 50;
+      nextHistory.splice(0, diff);
+    }
+
+    setHistory(nextHistory);
+    setHistoryIndex(nextHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      const prevModules = history[newIndex];
+      setFile(prev => ({ ...prev, modules: prevModules }));
+      updateFileMetadata(id, { modules: prevModules });
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      const nextModules = history[newIndex];
+      setFile(prev => ({ ...prev, modules: nextModules }));
+      updateFileMetadata(id, { modules: nextModules });
+    }
+  };
+
+  // Keyboard Shortcuts for Undo/Redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history, historyIndex]); // Re-bind when history changes to access latest state
+
   useEffect(() => {
     if (isLoading) return; // Wait for initial load
 
@@ -91,6 +166,7 @@ const SnippetDetailContent = () => {
     const updatedFile = { ...file, modules: newModules };
     setFile(updatedFile);
     updateFileMetadata(id, { modules: newModules });
+    isDirty.current = true; // Mark as dirty
   };
 
   const handleAddNextModule = (index, type) => {
@@ -116,6 +192,7 @@ const SnippetDetailContent = () => {
 
     newModules.splice(index + 1, 0, newModule);
 
+    commitToHistory(newModules); // Add to history
     const updatedFile = { ...file, modules: newModules };
     setFile(updatedFile);
     updateFileMetadata(id, { modules: newModules });
@@ -139,10 +216,23 @@ const SnippetDetailContent = () => {
 
     newModules.splice(insertAt, 0, item);
 
+    commitToHistory(newModules); // Add to history
     const updatedFile = { ...file, modules: newModules };
     setFile(updatedFile);
     updateFileMetadata(id, { modules: newModules });
     setLastMovedId(item.id); // Trigger auto-scroll
+  };
+
+  const handleDeleteModule = (index) => {
+    if (!file) return;
+    const newModules = [...file.modules];
+    newModules.splice(index, 1);
+
+    commitToHistory(newModules);
+    const updatedFile = { ...file, modules: newModules };
+    setFile(updatedFile);
+    updateFileMetadata(id, { modules: newModules });
+    toast.success("Module deleted");
   };
 
   const calculateDropIndex = (y) => {
@@ -212,6 +302,7 @@ const SnippetDetailContent = () => {
                 isDragging={isDragging}
                 setIsDragging={setIsDragging}
                 scrollContainerRef={containerRef}
+                onDelete={() => handleDeleteModule(index)}
               >
                 {module.type === 'text' ? (
                   <TextModule
