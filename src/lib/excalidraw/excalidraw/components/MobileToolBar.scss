@@ -1,5 +1,4 @@
-@import "open-color/open-color.scss";
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .mobile-toolbar {
@@ -38,10 +37,8 @@
     }
 
     &.active {
-      background: var(
-        --color-surface-primary-container,
-        var(--island-bg-color)
-      );
+      background: var(--color-surface-primary-container,
+          var(--island-bg-color));
       border-color: var(--button-active-border, var(--color-primary-darkest));
     }
 

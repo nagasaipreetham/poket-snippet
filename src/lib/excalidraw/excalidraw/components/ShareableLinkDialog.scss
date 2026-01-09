@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .ShareableLinkDialog {
@@ -26,6 +26,7 @@
         from {
           opacity: 0;
         }
+
         to {
           opacity: 1;
         }
@@ -55,7 +56,7 @@
       background: var(--color-success);
       color: var(--color-success-text);
 
-      & > svg {
+      &>svg {
         width: 0.875rem;
         height: 0.875rem;
       }
@@ -83,7 +84,7 @@
         margin: 0;
       }
 
-      & p + p {
+      & p+p {
         margin-top: 1em;
       }
     }

@@ -19,5 +19,13 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',   // 👈 REQUIRED
     port: 5173
-  }
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ["legacy-js-api", "import", "global-builtin", "color-functions"],
+        api: 'modern-compiler',
+      },
+    },
+  },
 })

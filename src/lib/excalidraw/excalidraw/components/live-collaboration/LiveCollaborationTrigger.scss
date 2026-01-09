@@ -1,4 +1,4 @@
-@import "../../css/variables.module.scss";
+@use "../../css/variables.module.scss" as *;
 
 .excalidraw {
   .collab-button {
@@ -48,9 +48,11 @@
     :root[dir="ltr"] & {
       right: -5px;
     }
+
     :root[dir="rtl"] & {
       left: -5px;
     }
+
     min-width: 1em;
     min-height: 1em;
     line-height: 1;

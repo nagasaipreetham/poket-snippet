@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .FixedSideContainer {
@@ -6,7 +6,7 @@
     pointer-events: none;
   }
 
-  .FixedSideContainer > * {
+  .FixedSideContainer>* {
     pointer-events: var(--ui-pointerEvents);
   }
 

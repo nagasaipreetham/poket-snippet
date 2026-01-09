@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .Dialog {
@@ -29,6 +29,7 @@
     &:hover {
       color: var(--color-gray-60);
     }
+
     &:active {
       color: var(--color-gray-40);
     }
@@ -38,7 +39,7 @@
       height: 1.5rem;
     }
 
-    & + .Dialog__content {
+    &+.Dialog__content {
       --offset: 28px;
       height: calc(100% - var(--offset)) !important;
       margin-top: var(--offset) !important;

@@ -1,4 +1,4 @@
-@import "../../css/variables.module.scss";
+@use "../../css/variables.module.scss" as *;
 
 .excalidraw-hyperlinkContainer {
   display: flex;
@@ -50,6 +50,7 @@
     color: $oc-blue-6;
     background-color: transparent !important;
     font-weight: 500;
+
     &.excalidraw-hyperlinkContainer--remove {
       color: $oc-red-9;
     }

@@ -43,11 +43,10 @@ import type { Socket } from "socket.io-client";
 
 let FIREBASE_CONFIG: Record<string, any>;
 try {
-  FIREBASE_CONFIG = JSON.parse(import.meta.env.VITE_APP_FIREBASE_CONFIG);
+  FIREBASE_CONFIG = JSON.parse(import.meta.env.VITE_APP_FIREBASE_CONFIG || "{}");
 } catch (error: any) {
   console.warn(
-    `Error JSON parsing firebase config. Supplied value: ${
-      import.meta.env.VITE_APP_FIREBASE_CONFIG
+    `Error JSON parsing firebase config. Supplied value: ${import.meta.env.VITE_APP_FIREBASE_CONFIG
     }`,
   );
   FIREBASE_CONFIG = {};
@@ -282,9 +281,8 @@ export const loadFilesFromFirebase = async (
   await Promise.all(
     [...new Set(filesIds)].map(async (id) => {
       try {
-        const url = `https://firebasestorage.googleapis.com/v0/b/${
-          FIREBASE_CONFIG.storageBucket
-        }/o/${encodeURIComponent(prefix.replace(/^\//, ""))}%2F${id}`;
+        const url = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket
+          }/o/${encodeURIComponent(prefix.replace(/^\//, ""))}%2F${id}`;
         const response = await fetch(`${url}?alt=media`);
         if (response.status < 400) {
           const arrayBuffer = await response.arrayBuffer();

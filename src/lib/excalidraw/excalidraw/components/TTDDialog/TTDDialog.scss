@@ -1,4 +1,4 @@
-@import "../../css/variables.module.scss";
+@use "../../css/variables.module.scss" as *;
 
 $verticalBreakpoint: 861px;
 
@@ -108,8 +108,7 @@ $verticalBreakpoint: 861px;
     flex-grow: 1;
     position: relative;
 
-    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==")
-      left center;
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==") left center;
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--dialog-border-color);
 
@@ -248,6 +247,7 @@ $verticalBreakpoint: 861px;
       &:hover {
         background-color: var(--color-primary-darker);
       }
+
       &:active {
         background-color: var(--color-primary-darkest);
       }

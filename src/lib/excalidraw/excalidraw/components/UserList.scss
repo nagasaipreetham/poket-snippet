@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   --avatar-size: 1.75rem;
@@ -24,10 +24,7 @@
 
     box-sizing: border-box;
 
-    --max-size: calc(
-      var(--avatar-size) * var(--max-avatars, 2) + var(--avatarList-gap) *
-        (var(--max-avatars, 2) - 1) + var(--userList-padding) * 2
-    );
+    --max-size: calc(var(--avatar-size) * var(--max-avatars, 2) + var(--avatarList-gap) * (var(--max-avatars, 2) - 1) + var(--userList-padding) * 2);
 
     // max width & height set to fix the max-avatars
     max-height: var(--max-size);
@@ -36,7 +33,7 @@
     // Tweak in 30px increments to fit more/fewer avatars in a row/column ^^
   }
 
-  .UserList > * {
+  .UserList>* {
     pointer-events: var(--ui-pointerEvents);
   }
 
@@ -69,6 +66,7 @@
     position: relative;
     display: flex;
     flex: 0 0 auto;
+
     .UserList__collaborator-status-icon {
       --size: 14px;
       position: absolute;
@@ -78,6 +76,7 @@
       right: -0.25rem;
       width: var(--size);
       height: var(--size);
+
       svg {
         flex: 0 0 auto;
         width: var(--size);
@@ -95,8 +94,7 @@
     display: flex;
   }
 
-  .UserList__collaborator.is-muted
-    .UserList__collaborator-status-icon-microphone-muted {
+  .UserList__collaborator.is-muted .UserList__collaborator-status-icon-microphone-muted {
     color: var(--color-danger);
     filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0.5));
   }
@@ -131,6 +129,7 @@
   }
 
   @keyframes speaking-indicator-anim {
+
     0%,
     100% {
       transform: scaleY(1);

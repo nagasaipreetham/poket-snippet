@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .HelpDialog {
@@ -35,6 +35,7 @@
 
       @at-root .excalidraw.theme--dark#{&} {
         --background: var(--color-surface-high);
+
         &:hover {
           --background: #363541;
         }
@@ -52,6 +53,7 @@
 
     &__link-icon {
       line-height: 0;
+
       svg {
         width: 1rem;
         height: 1rem;
@@ -60,9 +62,11 @@
 
     &__islands-container {
       display: grid;
+
       @media screen and (min-width: 1024px) {
         grid-template-columns: 1fr 1fr;
       }
+
       grid-column-gap: 1.5rem;
       grid-row-gap: 2rem;
     }
@@ -71,9 +75,11 @@
       &__island--tools {
         grid-area: 1 / 1 / 2 / 2;
       }
+
       &__island--view {
         grid-area: 2 / 1 / 3 / 2;
       }
+
       &__island--editor {
         grid-area: 1 / 2 / 3 / 3;
       }

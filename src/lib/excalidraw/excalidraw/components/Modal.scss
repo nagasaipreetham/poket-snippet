@@ -1,4 +1,4 @@
-@import "../css/variables.module.scss";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   &.excalidraw-modal-container {
@@ -83,6 +83,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -93,6 +94,7 @@
       opacity: 0;
       transform: scale(0.9);
     }
+
     to {
       opacity: 1;
       transform: scale(1);

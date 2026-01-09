@@ -1,4 +1,4 @@
-@import "../css/theme";
+@use "../css/variables.module.scss" as *;
 
 .excalidraw {
   .excalidraw-button {

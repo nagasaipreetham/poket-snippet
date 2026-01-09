@@ -1,0 +1,2 @@
+﻿src/lib/excalidraw-app/vite.config.mts(293,6): error TS1005: ',' expected.
+src/lib/excalidraw-app/vite.config.mts(294,4): error TS1005: ';' expected.

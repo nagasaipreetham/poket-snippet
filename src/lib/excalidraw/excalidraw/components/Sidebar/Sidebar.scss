@@ -1,5 +1,4 @@
-@import "open-color/open-color";
-@import "../../css/variables.module.scss";
+@use "../../css/variables.module.scss" as *;
 
 .excalidraw {
   .sidebar {
@@ -123,7 +122,7 @@
     }
   }
 
-  .sidebar-tabs-root > .sidebar__header {
+  .sidebar-tabs-root>.sidebar__header {
     padding-top: 0;
     padding-bottom: 1rem;
   }
