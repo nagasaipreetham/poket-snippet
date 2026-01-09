@@ -44,12 +44,12 @@ import type { StaticCanvasAppState, Zoom } from "../types";
 
 const GridLineColor = {
   [THEME.LIGHT]: {
-    bold: "#dddddd",
-    regular: "#e5e5e5",
+    bold: "rgba(0, 0, 0, 0.2)",
+    regular: "rgba(0, 0, 0, 0.2)",
   },
   [THEME.DARK]: {
-    bold: applyDarkModeFilter("#dddddd"),
-    regular: applyDarkModeFilter("#e5e5e5"),
+    bold: "rgba(255, 255, 255, 0.2)",
+    regular: "rgba(255, 255, 255, 0.2)",
   },
 } as const;
 
@@ -88,11 +88,13 @@ const strokeGrid = (
     const isBold =
       gridStep > 1 && Math.round(x - scrollX) % (gridStep * gridSize) === 0;
     // don't render regular lines when zoomed out and they're barely visible
-    if (!isBold && actualGridSize < 10) {
+    // Remove inner grids: skip if not bold
+    if (!isBold) {
       continue;
     }
 
-    const lineWidth = Math.min(1 / zoom.value, isBold ? 4 : 1);
+    // Reduce thickness: thinner line
+    const lineWidth = 0.5 / zoom.value;
     context.lineWidth = lineWidth;
     const lineDash = [lineWidth * 3, spaceWidth + (lineWidth + spaceWidth)];
 
@@ -109,11 +111,13 @@ const strokeGrid = (
   for (let y = offsetY; y < offsetY + height + gridSize * 2; y += gridSize) {
     const isBold =
       gridStep > 1 && Math.round(y - scrollY) % (gridStep * gridSize) === 0;
-    if (!isBold && actualGridSize < 10) {
+    // Remove inner grids
+    if (!isBold) {
       continue;
     }
 
-    const lineWidth = Math.min(1 / zoom.value, isBold ? 4 : 1);
+    // Reduce thickness
+    const lineWidth = 0.5 / zoom.value;
     context.lineWidth = lineWidth;
     const lineDash = [lineWidth * 3, spaceWidth + (lineWidth + spaceWidth)];
 
@@ -404,7 +408,7 @@ const _renderStaticScene = ({
             (isExporting ||
               (isEmbeddableElement(element) &&
                 renderConfig.embedsValidationStatus.get(element.id) !==
-                  true)) &&
+                true)) &&
             element.width &&
             element.height
           ) {

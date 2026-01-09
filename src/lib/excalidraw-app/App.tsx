@@ -882,6 +882,7 @@ const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
         handleKeyboardGlobally={true}
         autoFocus={true}
         theme={editorTheme}
+        gridModeEnabled={true}
         renderTopRightUI={(isMobile) => {
           if (isMobile || !collabAPI || isCollabDisabled) {
             return null;
