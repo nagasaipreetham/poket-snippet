@@ -1,0 +1,63 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@excalidraw/excalidraw": [
+        "src/lib/excalidraw/excalidraw/index.tsx"
+      ],
+      "@excalidraw/excalidraw/*": [
+        "src/lib/excalidraw/excalidraw/*"
+      ],
+      "@excalidraw/utils": [
+        "src/lib/excalidraw/utils/src"
+      ],
+      "@excalidraw/utils/*": [
+        "src/lib/excalidraw/utils/src/*"
+      ],
+      "@excalidraw/element": [
+        "src/lib/excalidraw/element/src"
+      ],
+      "@excalidraw/element/*": [
+        "src/lib/excalidraw/element/src/*"
+      ],
+      "@excalidraw/common": [
+        "src/lib/excalidraw/common/src"
+      ],
+      "@excalidraw/common/*": [
+        "src/lib/excalidraw/common/src/*"
+      ],
+      "@excalidraw/math": [
+        "src/lib/excalidraw/math/src"
+      ],
+      "@excalidraw/math/*": [
+        "src/lib/excalidraw/math/src/*"
+      ]
+    },
+    "types": [
+      "vite/client",
+      "node"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

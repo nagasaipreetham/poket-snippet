@@ -4,6 +4,8 @@ import Sidebar from './Sidebar';
 import ChatFAB from '../Chat/ChatFAB';
 import ChatInterface from '../Chat/ChatInterface';
 import useChatStore from '../../store/chatStore';
+import PocketCanvasButton from '../PocketCanvas/PocketCanvasButton';
+import CanvasModal from '../PocketCanvas/CanvasModal';
 
 const MainLayout = () => {
   const { isOpen } = useChatStore();
@@ -103,7 +105,13 @@ const MainLayout = () => {
           {shouldRender && <ChatInterface />}
         </div>
       </div>
+
+      {/* Floating Action Buttons */}
       <ChatFAB />
+      <PocketCanvasButton />
+
+      {/* Modals */}
+      <CanvasModal />
     </div>
   );
 };

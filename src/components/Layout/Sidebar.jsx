@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFileSystem } from '../../context/FileSystemContext';
 import SidebarItem from './SidebarItem';
 import CreateButton from '../UI/CreateButton';
+import usePocketCanvasStore from '../../store/pocketCanvasStore';
 
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, Settings } from 'lucide-react';
@@ -152,6 +153,21 @@ const Sidebar = () => {
             <Heart size={18} />
             <span>Favorites</span>
           </Link>
+
+          {/* Pocket Canvas Trigger */}
+          <button
+            onClick={() => {
+              // We need to trigger the store toggle. 
+              // Since Sidebar doesn't have direct access to the store import here easily without converting to useStore,
+              // we should import the store hook.
+              const { toggleCanvas } = usePocketCanvasStore();
+              toggleCanvas();
+            }}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors text-left"
+          >
+            <Palette size={18} />
+            <span>Pocket Canvas</span>
+          </button>
 
           {/* Restored Main Create Button - User Request #3 */}
           <div className="px-2 pb-4 border-b border-border/50">
