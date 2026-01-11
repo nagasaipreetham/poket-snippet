@@ -235,6 +235,27 @@ const SnippetDetailContent = () => {
     toast.success("Module deleted");
   };
 
+  const handleDuplicateModule = (index) => {
+    if (!file) return;
+    const newModules = [...file.modules];
+    const moduleToDuplicate = newModules[index];
+
+    const duplicatedModule = {
+      ...moduleToDuplicate,
+      id: uuidv4(), // Generate new ID
+      // Reset content if needed, but usually duplicate keeps content. 
+      // Requirement says "duplicate icon", usually implies full copy.
+    };
+
+    newModules.splice(index + 1, 0, duplicatedModule);
+
+    commitToHistory(newModules);
+    const updatedFile = { ...file, modules: newModules };
+    setFile(updatedFile);
+    updateFileMetadata(id, { modules: newModules });
+    toast.success("Module duplicated");
+  };
+
   const calculateDropIndex = (y) => {
     if (!file || !file.modules) return 0;
     const moduleIds = file.modules.map(m => m.id);
@@ -303,6 +324,8 @@ const SnippetDetailContent = () => {
                 setIsDragging={setIsDragging}
                 scrollContainerRef={containerRef}
                 onDelete={() => handleDeleteModule(index)}
+                onDuplicate={() => handleDuplicateModule(index)}
+                onUpdate={(updates) => handleModuleUpdate(index, updates)}
               >
                 {module.type === 'text' ? (
                   <TextModule

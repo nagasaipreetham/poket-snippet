@@ -96,6 +96,11 @@ export const getFontFamilyString = ({
 }) => {
   for (const [fontFamilyString, id] of Object.entries(FONT_FAMILY)) {
     if (id === fontFamily) {
+      if (id === FONT_FAMILY.Excalifont) {
+        return '"Edu SA Beginner"';
+      } else if (id === FONT_FAMILY.Virgil) {
+        return "Rancho";
+      }
       return `${fontFamilyString}${getFontFamilyFallbacks(id)
         .map((x) => `, ${x}`)
         .join("")}`;
@@ -386,8 +391,8 @@ export const updateActiveTool = (
   appState: Pick<AppState, "activeTool">,
   data: ((
     | {
-        type: ToolType;
-      }
+      type: ToolType;
+    }
     | { type: "custom"; customType: string }
   ) & { locked?: boolean; fromSelection?: boolean }) & {
     lastActiveToolBeforeEraser?: ActiveTool | null;
@@ -554,8 +559,8 @@ export const isTransparent = (color: string) => {
 
 export type ResolvablePromise<T> = Promise<T> & {
   resolve: [T] extends [undefined]
-    ? (value?: MaybePromise<Awaited<T>>) => void
-    : (value: MaybePromise<Awaited<T>>) => void;
+  ? (value?: MaybePromise<Awaited<T>>) => void
+  : (value: MaybePromise<Awaited<T>>) => void;
   reject: (error: Error) => void;
 };
 export const resolvablePromise = <T>() => {
@@ -830,9 +835,9 @@ export const queryFocusableElements = (container: HTMLElement | null) => {
 
   return focusableElements
     ? Array.from(focusableElements).filter(
-        (element) =>
-          element.tabIndex > -1 && !(element as HTMLInputElement).disabled,
-      )
+      (element) =>
+        element.tabIndex > -1 && !(element as HTMLInputElement).disabled,
+    )
     : [];
 };
 
@@ -863,14 +868,14 @@ export const isShallowEqual = <
   comparators?:
     | { [key in keyof T]?: (a: T[key], b: T[key]) => boolean }
     | (keyof T extends K[number]
-        ? K extends readonly (keyof T)[]
-          ? K
-          : {
-              _error: "keys are either missing or include keys not in compared obj";
-            }
-        : {
-            _error: "keys are either missing or include keys not in compared obj";
-          }),
+      ? K extends readonly (keyof T)[]
+      ? K
+      : {
+        _error: "keys are either missing or include keys not in compared obj";
+      }
+      : {
+        _error: "keys are either missing or include keys not in compared obj";
+      }),
   debug = false,
 ) => {
   const aKeys = Object.keys(objA);
@@ -914,7 +919,7 @@ export const isShallowEqual = <
     const ret = comparator
       ? comparator(objA[key], objB[key])
       : objA[key] === objB[key] ||
-        _defaultIsShallowComparatorFallback(objA[key], objB[key]);
+      _defaultIsShallowComparatorFallback(objA[key], objB[key]);
 
     if (!ret && debug) {
       console.warn(
@@ -1024,8 +1029,8 @@ export const isMemberOf = <T extends string>(
   return collection instanceof Set || collection instanceof Map
     ? collection.has(value as T)
     : "includes" in collection
-    ? collection.includes(value as T)
-    : collection.hasOwnProperty(value);
+      ? collection.includes(value as T)
+      : collection.hasOwnProperty(value);
 };
 
 export const cloneJSON = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
@@ -1105,7 +1110,7 @@ export function addEventListener(
   options?: boolean | AddEventListenerOptions,
 ): UnsubscribeCallback {
   if (!target) {
-    return () => {};
+    return () => { };
   }
   target?.addEventListener?.(type, listener, options);
   return () => {
@@ -1158,11 +1163,11 @@ export type HasBrand<T> = {
 
 type RemoveAllBrands<T> = HasBrand<T> extends true
   ? {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      [K in keyof T as K extends `~brand~${infer _}` | "_brand"
-        ? never
-        : K]: T[K];
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    [K in keyof T as K extends `~brand~${infer _}` | "_brand"
+    ? never
+    : K]: T[K];
+  }
   : T;
 
 // For accepting values - uses loose matching for branded types
@@ -1173,8 +1178,8 @@ type UnbrandForValue<T> = T extends Map<infer E, infer F>
   ? Set<UnbrandForValue<E>>
   : T extends readonly any[]
   ? T extends any[]
-    ? unknown[] // mutable array - require mutable input
-    : readonly unknown[] // readonly array - accept readonly input
+  ? unknown[] // mutable array - require mutable input
+  : readonly unknown[] // readonly array - accept readonly input
   : RemoveAllBrands<T>;
 
 // For return types - preserves array element unbranding
@@ -1188,10 +1193,10 @@ export type Unbrand<T> = T extends Map<infer E, infer F>
 
 export type CombineBrands<BrandedType, CurrentType> =
   BrandedType extends readonly (infer BE)[]
-    ? CurrentType extends readonly (infer CE)[]
-      ? Array<CE & BE>
-      : CurrentType & BrandedType
-    : CurrentType & BrandedType;
+  ? CurrentType extends readonly (infer CE)[]
+  ? Array<CE & BE>
+  : CurrentType & BrandedType
+  : CurrentType & BrandedType;
 
 export type CombineBrandsIfNeeded<T, Required> = [T] extends [Required]
   ? T[]
@@ -1264,8 +1269,8 @@ export const sizeOf = (
   return isReadonlyArray(value)
     ? value.length
     : value instanceof Map || value instanceof Set
-    ? value.size
-    : Object.keys(value).length;
+      ? value.size
+      : Object.keys(value).length;
 };
 
 export const reduceToCommonValue = <T, R = T>(
@@ -1312,7 +1317,7 @@ export const getFeatureFlag = <F extends keyof FEATURE_FLAGS>(
         const flags = JSON.parse(serializedFlags);
         featureFlags = flags ?? DEFAULT_FEATURE_FLAGS;
       }
-    } catch {}
+    } catch { }
   }
 
   return (featureFlags || DEFAULT_FEATURE_FLAGS)[flag];

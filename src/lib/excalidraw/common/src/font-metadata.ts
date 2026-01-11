@@ -40,6 +40,7 @@ export const FONT_METADATA: Record<number, FontMetadata> = {
       descender: -374,
       lineHeight: 1.25,
     },
+    local: true,
   },
   [FONT_FAMILY.Nunito]: {
     metrics: {
@@ -73,6 +74,7 @@ export const FONT_METADATA: Record<number, FontMetadata> = {
       lineHeight: 1.25,
     },
     deprecated: true,
+    local: true,
   },
   [FONT_FAMILY.Helvetica]: {
     metrics: {
