@@ -34,8 +34,7 @@ const Login = () => {
 
         // Save user to context (include accessToken for future API calls)
         setAuthUser({
-          ...user,
-          accessToken: accessToken
+          ...user, // This now includes the 5-day JWT accessToken from backend
         });
 
         toast.success(`Welcome back, ${user.name}!`);
