@@ -108,7 +108,7 @@ const MainLayout = () => {
 
       {/* Floating Action Buttons */}
       <ChatFAB />
-      <PocketCanvasButton />
+      <PocketCanvasButton chatSidebarOpen={isOpen} chatWidth={isSmallScreen ? window.innerWidth : chatWidth} />
 
       {/* Modals */}
       <CanvasModal />
