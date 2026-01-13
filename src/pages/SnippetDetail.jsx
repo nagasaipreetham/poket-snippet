@@ -20,6 +20,7 @@ const SnippetDetailContent = () => {
   // Focus Management
   const [activeFocusId, setActiveFocusId] = useState(null);
   const initialFocusSet = useRef(false);
+  const processedRecentId = useRef(null);    // Prevent infinite loop on addToRecent
 
   // Drag & Drop State
   const [isDragging, setIsDragging] = useState(false);
@@ -130,7 +131,12 @@ const SnippetDetailContent = () => {
       }
 
       setFile({ ...foundFile, modules: modules });
-      addToRecent(foundFile);
+
+      // Only add to recent once per mount to avoid infinite loops
+      if (processedRecentId.current !== id) {
+        addToRecent(foundFile);
+        processedRecentId.current = id;
+      }
 
       // Handle Initial Focus (Only focusing top text if empty)
       if (!initialFocusSet.current) {
