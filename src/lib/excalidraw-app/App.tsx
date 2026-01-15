@@ -213,6 +213,7 @@ const shareableLinkConfirmDialog = {
 const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
+  initialData?: ExcalidrawInitialDataState | null;
 }): Promise<
   { scene: ExcalidrawInitialDataState | null } & (
     | { isExternalScene: true; id: string; key: string }
@@ -225,6 +226,14 @@ const initializeScene = async (opts: {
     /^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/,
   );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
+
+  // If initialData is provided (e.g. from Cloud Load), use it and skip local storage
+  if (opts.initialData) {
+    return {
+      scene: opts.initialData,
+      isExternalScene: false
+    };
+  }
 
   const localDataState = importFromLocalStorage();
 
@@ -246,6 +255,7 @@ const initializeScene = async (opts: {
   let roomLinkData = getCollaborationLinkData(window.location.href);
   const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
   if (isExternalScene) {
+
     if (
       // don't prompt if scene is empty
       !scene.elements.length ||
@@ -308,7 +318,7 @@ const initializeScene = async (opts: {
         !scene.elements.length ||
         (await openConfirmModal(shareableLinkConfirmDialog))
       ) {
-        return { scene: data, isExternalScene };
+        return { scene: data, isExternalScene: false };
       }
     } catch (error: any) {
       return {
@@ -317,7 +327,7 @@ const initializeScene = async (opts: {
             errorMessage: t("alerts.invalidSceneUrl"),
           },
         },
-        isExternalScene,
+        isExternalScene: false,
       };
     }
   }
@@ -368,7 +378,15 @@ const initializeScene = async (opts: {
   return { scene: null, isExternalScene: false };
 };
 
-const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
+const ExcalidrawWrapper = (props: {
+  customTopRightUI?: React.ReactNode;
+  onChange?: (
+    elements: readonly OrderedExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ) => void;
+  initialData?: ExcalidrawInitialDataState | null;
+}) => {
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
   const currentScenePromiseRef = useRef<Promise<any> | null>(null);
@@ -506,7 +524,7 @@ const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
       }
     };
 
-    initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+    initializeScene({ collabAPI, excalidrawAPI, initialData: props.initialData }).then(async (data) => {
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
     });
@@ -706,6 +724,10 @@ const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
         window.devicePixelRatio,
       );
     }
+
+    if (props.onChange) {
+      props.onChange(elements, appState, files);
+    }
   };
 
   const [latestShareableLink, setLatestShareableLink] = useState<string | null>(
@@ -838,8 +860,8 @@ const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
       })}
     >
       <Excalidraw
-        excalidrawAPI={excalidrawRefCallback}
         onChange={onChange}
+        excalidrawAPI={excalidrawRefCallback}
         initialData={initialStatePromiseRef.current.promise}
         isCollaborating={isCollaborating}
         onPointerUpdate={collabAPI?.onPointerUpdate}
@@ -1192,7 +1214,15 @@ const ExcalidrawWrapper = (props: { customTopRightUI?: React.ReactNode }) => {
   );
 };
 
-const ExcalidrawApp = (props: { customTopRightUI?: React.ReactNode }) => {
+const ExcalidrawApp = (props: {
+  customTopRightUI?: React.ReactNode;
+  onChange?: (
+    elements: readonly OrderedExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ) => void;
+  initialData?: ExcalidrawInitialDataState | null;
+}) => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
   if (isCloudExportWindow) {

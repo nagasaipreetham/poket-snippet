@@ -18,4 +18,10 @@ export const createSnippet = (data) => api.post('/snippets', data);
 export const updateSnippet = (id, data) => api.put(`/snippets/${id}`, data);
 export const deleteSnippet = (id) => api.delete(`/snippets/${id}`);
 
+// Canvas API
+export const getCanvases = (userId) => api.get(`/canvas/list/${userId}`);
+export const getCanvas = (id) => api.get(`/canvas/${id}`);
+export const saveCanvas = (data) => api.post('/canvas/save', data);
+export const deleteCanvas = (id) => api.delete(`/canvas/${id}`);
+
 export default api;
