@@ -386,6 +386,7 @@ const ExcalidrawWrapper = (props: {
     files: BinaryFiles,
   ) => void;
   initialData?: ExcalidrawInitialDataState | null;
+  onAPIReady?: (api: ExcalidrawImperativeAPI) => void;
 }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
@@ -455,6 +456,9 @@ const ExcalidrawWrapper = (props: {
   useEffect(() => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
       return;
+    }
+    if (props.onAPIReady && excalidrawAPI) {
+      try { props.onAPIReady(excalidrawAPI); } catch {}
     }
 
     const loadImages = (
@@ -1222,6 +1226,7 @@ const ExcalidrawApp = (props: {
     files: BinaryFiles,
   ) => void;
   initialData?: ExcalidrawInitialDataState | null;
+  onAPIReady?: (api: ExcalidrawImperativeAPI) => void;
 }) => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
