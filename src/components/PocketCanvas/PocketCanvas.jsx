@@ -21,11 +21,23 @@ const PocketCanvas = (props) => {
   const [initialData, setInitialData] = useState(null);
   const [showCanvasList, setShowCanvasList] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const lastSavedDataStringRef = useRef(""); // To prevent redundant saves
   const lastSavedNameRef = useRef(canvasName);
+  const lastSavedElementsRef = useRef(null);
+  const lastSavedFilesRef = useRef(null);
   const hasAutoLoadedRef = useRef(false);
   const excalidrawAPIRef = useRef(null); // Ref to access Excalidraw API
+  const isInitializedRef = useRef(false); // Guard against premature saves
+
+  // Cleanup local storage when user changes or on mount to ensure no stale data
+  useEffect(() => {
+    // Clear Excalidraw's local storage keys on mount/user change
+    localStorage.removeItem('excalidraw');
+    localStorage.removeItem('excalidraw-state');
+    localStorage.removeItem('excalidraw-collab');
+  }, [user]);
 
   // Cleanup local storage only on unload to ensure fresh cloud load next time
   useEffect(() => {
@@ -46,26 +58,70 @@ const PocketCanvas = (props) => {
   // Auto-load logic and initial fetch
   useEffect(() => {
     const init = async () => {
-      if (user && !hasAutoLoadedRef.current) {
+      // If user logs out, clear everything
+      if (!user) {
+        hasAutoLoadedRef.current = false;
+        isInitializedRef.current = false; // Block saves
+        setActiveCanvasId(null);
+        setCanvasName('Untitled Canvas');
+        setSavedCanvases([]);
+        if (excalidrawAPIRef.current) {
+          excalidrawAPIRef.current.resetScene();
+        }
+        return;
+      }
+
+      // If user exists, proceed with auto-load
+      if (!hasAutoLoadedRef.current) {
         hasAutoLoadedRef.current = true;
+        isInitializedRef.current = false; // Block saves during init
+        setReady(false);
         try {
           const res = await getCanvases(user._id);
           setSavedCanvases(res.data);
 
           // Auto-load latest if exists
           if (res.data && res.data.length > 0) {
-            const latest = res.data[0]; // Assuming sorted by updatedAt desc in backend
-            console.log("[PocketCanvas] Auto-loading latest canvas:", { id: latest._id, name: latest.name, r2Key: latest.r2Key });
-            await loadCanvas(latest._id);
+            const storedId = localStorage.getItem(`pocketCanvas:lastActive:${user._id}`);
+            const sorted = [...res.data].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            const preferred = sorted.find(c => c._id === storedId) || sorted[0];
+            console.log("[PocketCanvas] Auto-loading canvas:", { id: preferred._id, name: preferred.name, r2Key: preferred.r2Key });
+            await loadCanvas(preferred._id);
             console.log("[PocketCanvas] Auto-load complete");
+            setReady(true);
           } else {
-            console.log("[PocketCanvas] No saved canvases to auto-load");
+            console.log("[PocketCanvas] No saved canvases to auto-load. Resetting scene.");
+            setActiveCanvasId(null);
+            setCanvasName('Untitled Canvas');
+            const emptyInitial = {
+              elements: [],
+              appState: {},
+              files: {},
+              scrollToContent: true,
+            };
+            setInitialData(emptyInitial);
+            lastSavedDataStringRef.current = JSON.stringify({
+              type: "excalidraw",
+              version: 2,
+              source: "pocket-snippet",
+              ...emptyInitial,
+            });
+            lastSavedNameRef.current = 'Untitled Canvas';
+            lastSavedElementsRef.current = JSON.stringify([]);
+            lastSavedFilesRef.current = JSON.stringify({});
+            isInitializedRef.current = true; // Initialize empty canvas
+            setReady(true);
           }
         } catch (err) {
           console.error("Failed to fetch/load canvases", err);
+          isInitializedRef.current = true; // Allow saves if error
+          setReady(true);
         }
-      } else if (user) {
+      } else {
+        // User changed (if component didn't unmount) or just re-render
         fetchCanvases();
+        isInitializedRef.current = true;
+        setReady(true);
       }
     };
     init();
@@ -102,19 +158,35 @@ const PocketCanvas = (props) => {
 
     // Check for changes to prevent loop
     const data = {
+      type: "excalidraw",
+      version: 2,
+      source: "pocket-snippet",
       elements,
       appState,
       files
     };
     const dataString = JSON.stringify(data);
+    const elementsString = JSON.stringify(elements || []);
+    const filesString = JSON.stringify(files || {});
 
-    // If data AND name are identical to last save, skip
-    // We store the exact string sent to backend to ensure parity
-    // Note: We need to check if we have a valid ID too. If we don't have ID, we MUST save (create).
-    if (activeCanvasIdRef.current &&
-      dataString === lastSavedDataStringRef.current &&
-      currentName === lastSavedNameRef.current) {
-      // console.log('PocketCanvas: No changes detected, skipping save');
+    // Safety: avoid resetting a non-empty canvas if a load failed and scene is empty
+    if (
+      activeCanvasIdRef.current &&
+      (Array.isArray(elements) ? elements.length === 0 : true) &&
+      (!files || Object.keys(files).length === 0) &&
+      lastSavedElementsRef.current && lastSavedElementsRef.current !== JSON.stringify([])
+    ) {
+      setSavingStatus('saved');
+      return;
+    }
+
+    // Only save when elements/files/name change; ignore ephemeral appState-only changes
+    if (
+      activeCanvasIdRef.current &&
+      elementsString === lastSavedElementsRef.current &&
+      filesString === lastSavedFilesRef.current &&
+      currentName === lastSavedNameRef.current
+    ) {
       setSavingStatus('saved');
       return;
     }
@@ -144,16 +216,23 @@ const PocketCanvas = (props) => {
       // Update refs on successful save
       lastSavedDataStringRef.current = dataString;
       lastSavedNameRef.current = currentName;
+      lastSavedElementsRef.current = elementsString;
+      lastSavedFilesRef.current = filesString;
 
       // If it was a new canvas, update ID immediately in ref and state
       if (isCreation && res.data.canvas._id) {
         activeCanvasIdRef.current = res.data.canvas._id; // Immediate update
         setActiveCanvasId(res.data.canvas._id); // State update for UI
         isCreatingRef.current = false; // Release lock
+        // Persist last active for this user
+        localStorage.setItem(`pocketCanvas:lastActive:${user._id}`, res.data.canvas._id);
         // Also refresh list to show new canvas
         fetchCanvases();
       } else {
         // Just update list to reflect partial updates (like time)
+        if (activeCanvasIdRef.current) {
+          localStorage.setItem(`pocketCanvas:lastActive:${user._id}`, activeCanvasIdRef.current);
+        }
         fetchCanvases();
       }
 
@@ -198,7 +277,7 @@ const PocketCanvas = (props) => {
   const lastCanvasDataRef = useRef(null);
 
   const onChange = (elements, appState, files) => {
-    if (!user || isLoading) return;
+    if (!user || isLoading || !isInitializedRef.current) return;
     lastCanvasDataRef.current = { elements, appState, files }; // Cache latest data
     setSavingStatus('saving'); // Set to saving immediately on change
     // Pass current name directly to avoid stale closuers in debounce
@@ -206,6 +285,9 @@ const PocketCanvas = (props) => {
   };
 
   const loadCanvas = async (canvasId) => {
+    // Cancel any pending save to avoid race conditions
+    debouncedSave.cancel();
+
     try {
       setIsLoading(true);
 
@@ -216,34 +298,56 @@ const PocketCanvas = (props) => {
 
       const res = await getCanvas(canvasId);
       const { canvas, data } = res.data;
+      let parsedData = data;
+      if (typeof parsedData === 'string') {
+        try {
+          parsedData = JSON.parse(parsedData);
+        } catch (e) {
+          console.error("[PocketCanvas] Failed to parse canvas data string", e);
+          parsedData = { elements: [], appState: {}, files: {} };
+        }
+      }
 
       setCanvasName(canvas.name);
       setActiveCanvasId(canvas._id);
 
       // Update refs to reflect loaded data as "saved"
-      const dataString = JSON.stringify(data);
+      const dataString = JSON.stringify(parsedData);
       lastSavedDataStringRef.current = dataString;
       lastSavedNameRef.current = canvas.name;
+      lastSavedElementsRef.current = JSON.stringify(parsedData.elements || []);
+      lastSavedFilesRef.current = JSON.stringify(parsedData.files || {});
 
       // Use Excalidraw API to update scene if available (avoids Provider isolation errors)
       if (excalidrawAPIRef.current) {
+        // Sanitize appState to remove transient/incompatible data
+        const sanitizedAppState = { ...(parsedData.appState || {}) };
+        delete sanitizedAppState.collaborators; // Fixes "forEach is not a function" error
+
+        console.log("[PocketCanvas] Loading data into Excalidraw:", {
+          elements: data.elements?.length,
+          appStateKeys: Object.keys(sanitizedAppState)
+        });
+
         excalidrawAPIRef.current.updateScene({
-          elements: data.elements,
-          appState: data.appState,
-          commitToHistory: true
+          elements: parsedData.elements || [],
+          appState: sanitizedAppState,
+          commitToHistory: true,
+          scrollToContent: true // Ensure content is visible
         });
         // Add files if any
-        if (data.files && Object.keys(data.files).length > 0) {
-          excalidrawAPIRef.current.addFiles(Object.values(data.files));
+        if (parsedData.files && Object.keys(parsedData.files).length > 0) {
+          excalidrawAPIRef.current.addFiles(Object.values(parsedData.files));
         }
       } else {
         // Fallback for initial load before API is ready
         setInitialData({
-          elements: data.elements,
-          appState: data.appState,
-          files: data.files,
-          scrollToContent: true
+          elements: parsedData.elements || [],
+          appState: parsedData.appState || {},
+          files: parsedData.files || {},
+          scrollToContent: true,
         });
+        setReady(true);
       }
 
       // Set status to saved after successful load
@@ -254,6 +358,7 @@ const PocketCanvas = (props) => {
       toast.error("Failed to load canvas");
     } finally {
       setIsLoading(false);
+      isInitializedRef.current = true; // Unblock saves after load
     }
   };
 
@@ -345,11 +450,17 @@ const PocketCanvas = (props) => {
       </div>
 
       <div style={{ height: "100%", width: "100%" }} className="excalidraw-app">
-        <ExcalidrawApp
-          {...props}
-          initialData={initialData}
-          onChange={onChange}
-        />
+        {ready ? (
+          <ExcalidrawApp
+            {...props}
+            initialData={initialData}
+            onChange={onChange}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full w-full text-text-muted">
+            <Loader className="animate-spin mr-2" size={16} /> Loading canvas…
+          </div>
+        )}
       </div>
     </div>
   );
