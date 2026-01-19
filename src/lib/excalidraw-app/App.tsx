@@ -387,7 +387,9 @@ const ExcalidrawWrapper = (props: {
   ) => void;
   initialData?: ExcalidrawInitialDataState | null;
   onAPIReady?: (api: ExcalidrawImperativeAPI) => void;
+  onThemeChange?: (theme: string) => void;
 }) => {
+
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
   const currentScenePromiseRef = useRef<Promise<any> | null>(null);
@@ -458,7 +460,7 @@ const ExcalidrawWrapper = (props: {
       return;
     }
     if (props.onAPIReady && excalidrawAPI) {
-      try { props.onAPIReady(excalidrawAPI); } catch {}
+      try { props.onAPIReady(excalidrawAPI); } catch { }
     }
 
     const loadImages = (
@@ -940,8 +942,12 @@ const ExcalidrawWrapper = (props: {
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
-          setTheme={(theme) => setAppTheme(theme)}
+          setTheme={(theme) => {
+            setAppTheme(theme);
+            props.onThemeChange?.(theme);
+          }}
           refresh={() => forceRefresh((prev) => !prev)}
+
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -1184,10 +1190,14 @@ const ExcalidrawWrapper = (props: {
             {
               ...CommandPalette.defaultItems.toggleTheme,
               perform: () => {
+                const newTheme = editorTheme === THEME.DARK ? THEME.LIGHT : THEME.DARK;
+
                 setAppTheme(
-                  editorTheme === THEME.DARK ? THEME.LIGHT : THEME.DARK,
+                  newTheme
                 );
+                props.onThemeChange?.(newTheme);
               },
+
             },
             {
               label: t("labels.installPWA"),
@@ -1227,7 +1237,9 @@ const ExcalidrawApp = (props: {
   ) => void;
   initialData?: ExcalidrawInitialDataState | null;
   onAPIReady?: (api: ExcalidrawImperativeAPI) => void;
+  onThemeChange?: (theme: string) => void;
 }) => {
+
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
   if (isCloudExportWindow) {

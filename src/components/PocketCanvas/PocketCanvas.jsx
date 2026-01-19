@@ -14,7 +14,7 @@ if (!window.process) {
 }
 
 const PocketCanvas = (props) => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [canvasName, setCanvasName] = useState('Untitled Canvas');
   const [activeCanvasId, setActiveCanvasId] = useState(null);
   const [savedCanvases, setSavedCanvases] = useState([]);
@@ -23,6 +23,8 @@ const PocketCanvas = (props) => {
   const [showCanvasList, setShowCanvasList] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [theme, setTheme] = useState('dark'); // Default theme
+
 
   const lastSavedDataStringRef = useRef(""); // To prevent redundant saves
   const lastSavedNameRef = useRef(canvasName);
@@ -120,6 +122,14 @@ const PocketCanvas = (props) => {
         return;
       }
 
+      // Initialize theme from user settings
+      if (user.settings && user.settings.canvasTheme) {
+        setTheme(user.settings.canvasTheme);
+      } else {
+        setTheme('dark'); // Default if not set
+      }
+
+
       // If user exists, proceed with auto-load
       if (!hasAutoLoadedRef.current) {
         hasAutoLoadedRef.current = true;
@@ -167,8 +177,9 @@ const PocketCanvas = (props) => {
       setSavedCanvases(canvases);
 
       if (canvases.length === 0) {
-        const emptyInitial = { elements: [], appState: {}, files: {}, scrollToContent: true };
+        const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
         setInitialData(emptyInitial);
+
         lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", ...emptyInitial });
         lastSavedNameRef.current = 'Untitled Canvas';
         lastSavedElementsRef.current = JSON.stringify([]);
@@ -208,7 +219,8 @@ const PocketCanvas = (props) => {
 
         const elements = restored?.elements || [];
         const files = restored?.files || {};
-        const appState = restored?.appState || {};
+        const appState = { ...restored?.appState, theme: user?.settings?.canvasTheme || 'dark' } || { theme: user?.settings?.canvasTheme || 'dark' };
+
 
         if (elements.length > 0 || Object.keys(files).length > 0) {
           setCanvasName(canvas?.name || candidate.name || 'Untitled Canvas');
@@ -226,7 +238,8 @@ const PocketCanvas = (props) => {
         }
       }
 
-      const emptyInitial = { elements: [], appState: {}, files: {}, scrollToContent: true };
+      const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
+
       setInitialData(emptyInitial);
       lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", ...emptyInitial });
       lastSavedNameRef.current = 'Untitled Canvas';
@@ -238,7 +251,8 @@ const PocketCanvas = (props) => {
       setReady(true);
     } catch (err) {
       console.error('[PocketCanvas] Blocking load failed', err);
-      const emptyInitial = { elements: [], appState: {}, files: {}, scrollToContent: true };
+      const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
+
       setInitialData(emptyInitial);
       lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", ...emptyInitial });
       lastSavedNameRef.current = 'Untitled Canvas';
@@ -444,7 +458,8 @@ const PocketCanvas = (props) => {
       // Use Excalidraw API to update scene if available (avoids Provider isolation errors)
       if (excalidrawAPIRef.current) {
         // Sanitize appState to remove transient/incompatible data
-        const sanitizedAppState = { ...(restored.appState || {}) };
+        const sanitizedAppState = { ...(restored.appState || {}), theme: user?.settings?.canvasTheme || 'dark' };
+
         delete sanitizedAppState.collaborators; // Fixes "forEach is not a function" error
 
         console.log("[PocketCanvas] Loading data into Excalidraw:", {
@@ -466,7 +481,8 @@ const PocketCanvas = (props) => {
         // Fallback for initial load before API is ready
         setInitialData({
           elements: restored.elements || [],
-          appState: restored.appState || {},
+          appState: { ...restored.appState || {}, theme: user?.settings?.canvasTheme || 'dark' },
+
           files: restored.files || {},
           scrollToContent: true,
         });
@@ -485,6 +501,24 @@ const PocketCanvas = (props) => {
     }
   };
 
+  const handleThemeChange = async (newTheme) => {
+    setTheme(newTheme);
+    // Excalidraw handles localStorage update internally via useHandleAppTheme
+
+    if (user) {
+      try {
+        await updateProfile({
+          settings: {
+            ...user.settings,
+            canvasTheme: newTheme
+          }
+        });
+      } catch (err) {
+        console.error("Failed to persist theme preference", err);
+      }
+    }
+  };
+
   const createNewCanvas = () => {
     setCanvasName('Untitled Canvas');
     setActiveCanvasId(null);
@@ -493,7 +527,8 @@ const PocketCanvas = (props) => {
     if (excalidrawAPIRef.current) {
       excalidrawAPIRef.current.updateScene({
         elements: [],
-        appState: {},
+        appState: { theme: user?.settings?.canvasTheme || 'dark' },
+
         commitToHistory: false
       });
     }
@@ -572,6 +607,7 @@ const PocketCanvas = (props) => {
         </div>
       </div>
 
+
       <div style={{ height: "100%", width: "100%" }} className="excalidraw-app">
         {ready ? (
           <ExcalidrawApp
@@ -581,7 +617,9 @@ const PocketCanvas = (props) => {
             onAPIReady={(api) => {
               excalidrawAPIRef.current = api;
             }}
+            onThemeChange={handleThemeChange}
           />
+
         ) : (
           <div className="flex items-center justify-center h-full w-full text-text-muted">
             <Loader className="animate-spin mr-2" size={16} /> Loading canvas…
