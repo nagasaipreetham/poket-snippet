@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import usePocketCanvasStore from '../../store/pocketCanvasStore';
 import ExcalidrawApp from '../../lib/excalidraw-app/App';
 import '../../lib/excalidraw-app/index.scss';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +15,7 @@ if (!window.process) {
 }
 
 const PocketCanvas = (props) => {
+  const { currentCanvasId } = usePocketCanvasStore();
   const { user, updateProfile } = useAuth();
   const [canvasName, setCanvasName] = useState('Untitled Canvas');
   const [activeCanvasId, setActiveCanvasId] = useState(null);
@@ -149,6 +151,13 @@ const PocketCanvas = (props) => {
     };
     init();
   }, [user]);
+
+  // Effect to load canvas if selected from store (Modal opening)
+  useEffect(() => {
+    if (currentCanvasId && isInitializedRef.current) {
+      loadCanvas(currentCanvasId);
+    }
+  }, [currentCanvasId]);
 
   const fetchCanvases = async () => {
     try {
