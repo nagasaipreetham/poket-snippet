@@ -138,7 +138,8 @@ const PocketCanvas = (props) => {
         isInitializedRef.current = false; // Block saves during init
         setReady(false);
         try {
-          await loadPreferredCanvasBlocking();
+          // Pass currentCanvasId from store to valid initialization
+          await initializeCanvas(currentCanvasId);
         } catch (err) {
           console.error("Failed to fetch/load canvases", err);
           isInitializedRef.current = true; // Allow saves if error
@@ -150,11 +151,12 @@ const PocketCanvas = (props) => {
       }
     };
     init();
-  }, [user]);
+  }, [user]); // Dependency on user only, since currentCanvasId is read once at mount
 
-  // Effect to load canvas if selected from store (Modal opening)
+  // Effect to load canvas if selected from store (Modal opening or subsequent clicks)
   useEffect(() => {
-    if (currentCanvasId && isInitializedRef.current) {
+    // Only handle if already initialized (to avoid race with init) and ID is present
+    if (currentCanvasId && isInitializedRef.current && currentCanvasId !== activeCanvasId) {
       loadCanvas(currentCanvasId);
     }
   }, [currentCanvasId]);
@@ -177,15 +179,22 @@ const PocketCanvas = (props) => {
     }
   };
 
-  const loadPreferredCanvasBlocking = async () => {
+  const initializeCanvas = async (overrideId) => {
     setReady(false);
     setIsLoading(true);
     try {
+      // Always fetch the list to ensure dropdown is up to date
       const listRes = await getCanvases(user._id);
       const canvases = Array.isArray(listRes.data) ? listRes.data : [];
       setSavedCanvases(canvases);
 
-      if (canvases.length === 0) {
+      if (overrideId) {
+        // If a specific ID is requested, load it directly
+        // loadCanvas handles fetching, parsing, and setting ready/initialData
+        await loadCanvas(overrideId);
+      } else {
+        // If no ID is requested, load an EMPTY/UNTITLED canvas
+        // We explicitly Do NOT load the last modified file here
         const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
         setInitialData(emptyInitial);
 
@@ -197,76 +206,12 @@ const PocketCanvas = (props) => {
         setCanvasName('Untitled Canvas');
         isInitializedRef.current = true;
         setReady(true);
-        return;
       }
-
-      const storedId = localStorage.getItem(`pocketCanvas:lastActive:${user._id}`);
-      const sorted = [...canvases].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-      const ordered = storedId
-        ? [sorted.find(c => c && c._id === storedId), ...sorted.filter(c => c && c._id !== storedId)]
-        : sorted;
-
-      for (const candidate of ordered) {
-        if (!candidate) continue;
-        const res = await getCanvas(candidate._id);
-        const { canvas, data } = res.data || {};
-        console.log('[PocketCanvas] Fetched canvas payload', {
-          id: candidate._id,
-          name: canvas?.name || candidate?.name,
-          type: typeof data,
-          strLen: typeof data === 'string' ? data.length : undefined,
-          keys: data && typeof data === 'object' ? Object.keys(data) : [],
-        });
-        let restored = null;
-        try {
-          const parsed = decodePayload(data);
-          const blob = new Blob([JSON.stringify(parsed || {})], { type: 'application/json' });
-          restored = await loadFromBlob(blob, null, null);
-        } catch (_) {
-          restored = null;
-        }
-
-        const elements = restored?.elements || [];
-        const files = restored?.files || {};
-        const appState = { ...restored?.appState, theme: user?.settings?.canvasTheme || 'dark' } || { theme: user?.settings?.canvasTheme || 'dark' };
-
-
-        if (elements.length > 0 || Object.keys(files).length > 0) {
-          setCanvasName(canvas?.name || candidate.name || 'Untitled Canvas');
-          setActiveCanvasId(canvas?._id || candidate._id);
-          localStorage.setItem(`pocketCanvas:lastActive:${user._id}`, (canvas?._id || candidate._id));
-
-          setInitialData({ elements, appState, files, scrollToContent: true });
-          lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", elements, appState, files });
-          lastSavedNameRef.current = canvas?.name || candidate.name || 'Untitled Canvas';
-          lastSavedElementsRef.current = JSON.stringify(elements);
-          lastSavedFilesRef.current = JSON.stringify(files);
-          isInitializedRef.current = true;
-          setReady(true);
-          return;
-        }
-      }
-
-      const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
-
-      setInitialData(emptyInitial);
-      lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", ...emptyInitial });
-      lastSavedNameRef.current = 'Untitled Canvas';
-      lastSavedElementsRef.current = JSON.stringify([]);
-      lastSavedFilesRef.current = JSON.stringify({});
-      setActiveCanvasId(ordered[0]?._id || null);
-      setCanvasName(ordered[0]?.name || 'Untitled Canvas');
-      isInitializedRef.current = true;
-      setReady(true);
     } catch (err) {
-      console.error('[PocketCanvas] Blocking load failed', err);
+      console.error('[PocketCanvas] Initialization failed', err);
+      // Fallback to empty
       const emptyInitial = { elements: [], appState: { theme: user?.settings?.canvasTheme || 'dark' }, files: {}, scrollToContent: true };
-
       setInitialData(emptyInitial);
-      lastSavedDataStringRef.current = JSON.stringify({ type: "excalidraw", version: 2, source: "pocket-snippet", ...emptyInitial });
-      lastSavedNameRef.current = 'Untitled Canvas';
-      lastSavedElementsRef.current = JSON.stringify([]);
-      lastSavedFilesRef.current = JSON.stringify({});
       setActiveCanvasId(null);
       setCanvasName('Untitled Canvas');
       isInitializedRef.current = true;
