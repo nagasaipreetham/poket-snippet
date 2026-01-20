@@ -155,19 +155,10 @@ const Sidebar = () => {
           </Link>
 
           {/* Pocket Canvas Trigger */}
-          <button
-            onClick={() => {
-              // We need to trigger the store toggle. 
-              // Since Sidebar doesn't have direct access to the store import here easily without converting to useStore,
-              // we should import the store hook.
-              const { toggleCanvas } = usePocketCanvasStore();
-              toggleCanvas();
-            }}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors text-left"
-          >
+          <Link to="/pocket-canvas" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
             <Palette size={18} />
             <span>Pocket Canvas</span>
-          </button>
+          </Link>
 
           {/* Restored Main Create Button - User Request #3 */}
           <div className="px-2 pb-4 border-b border-border/50">
