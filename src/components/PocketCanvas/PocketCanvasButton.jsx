@@ -1,9 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import usePocketCanvasStore from '../../store/pocketCanvasStore';
-import { Palette } from 'lucide-react';
+import { Palette, Loader } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { getCanvases } from '../../api/api';
+import toast from 'react-hot-toast';
 
 const PocketCanvasButton = ({ chatSidebarOpen, chatWidth }) => {
-  const { isOpen, toggleCanvas } = usePocketCanvasStore();
+  const { isOpen, openCanvasWithId, toggleCanvas } = usePocketCanvasStore();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const buttonRef = useRef(null);
 
   if (isOpen) return null;
@@ -22,6 +27,34 @@ const PocketCanvasButton = ({ chatSidebarOpen, chatWidth }) => {
   // Otherwise, no translation (stay at right: 24px).
   const translation = chatSidebarOpen ? chatWidth : 0;
 
+  const handleClick = async () => {
+    if (!user) {
+      toggleCanvas();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await getCanvases(user._id);
+      const canvases = res.data;
+
+      if (canvases && canvases.length > 0) {
+        // Canvases are already sorted by updatedAt desc from backend
+        const latestCanvas = canvases[0];
+        openCanvasWithId(latestCanvas._id);
+        toast.success(`Opened ${latestCanvas.name}`);
+      } else {
+        // No canvases, just toggle open (will show empty/new)
+        toggleCanvas();
+      }
+    } catch (error) {
+      console.error("Failed to fetch latest canvas", error);
+      toggleCanvas(); // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className="fixed top-6 right-6 z-50 transition-transform duration-300 ease-in-out"
@@ -32,7 +65,7 @@ const PocketCanvasButton = ({ chatSidebarOpen, chatWidth }) => {
     >
       <button
         ref={buttonRef}
-        onClick={toggleCanvas}
+        onClick={handleClick}
         onMouseMove={handleMouseMove}
         className="relative group outline-none transition-transform duration-300 hover:scale-105"
         aria-label="Open Pocket Canvas"
@@ -51,7 +84,11 @@ const PocketCanvasButton = ({ chatSidebarOpen, chatWidth }) => {
         {/* 2. Middle: White Background Surface (z-index 0) */}
         <div className="bg-white border border-gray-200 shadow-lg rounded-full p-2.5 relative z-0 flex items-center justify-center">
           {/* 3. Front: Icon (inherits z-index context likely, but visually on top of white bg) */}
-          <Palette size={20} className="text-black transition-colors" />
+          {loading ? (
+            <Loader size={20} className="text-black animate-spin" />
+          ) : (
+            <Palette size={20} className="text-black transition-colors" />
+          )}
         </div>
       </button>
     </div>
