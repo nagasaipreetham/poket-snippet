@@ -21,3 +21,13 @@ export const getCanvasById = async (id) => {
     throw error;
   }
 };
+
+export const deleteCanvas = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/api/canvas/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting canvas ${id}:`, error);
+    throw error;
+  }
+};

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Home, File, Folder, X, FilePlus, FolderPlus, Heart, Plus, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFileSystem } from '../../context/FileSystemContext';
@@ -15,6 +15,23 @@ const Sidebar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   // Responsive Sidebar Logic
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1000);
@@ -91,27 +108,29 @@ const Sidebar = () => {
         `}
       >
         {/* User Info */}
-        <div className="relative border-b border-transparent hover:border-border">
+        <div className="relative border-b border-transparent hover:border-border" ref={menuRef}>
           <div
             className="p-4 flex items-center justify-between hover:bg-surface transition-colors cursor-pointer"
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
-            <div className="flex items-center space-x-3 overflow-hidden">
-              {user?.picture ? (
-                <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full border border-white/10" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center text-accent font-bold">
-                  {user?.name?.charAt(0) || 'U'}
-                </div>
-              )}
-              <span className="text-white truncate max-w-[120px]" title={user?.name}>{user?.name || 'Guest User'}</span>
+            <div className="flex items-center space-x-3 overflow-hidden flex-1">
+              <img
+                src={user?.custom_profile_picture || user?.picture || "https://via.placeholder.com/150"}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full border border-white/10 object-cover shrink-0"
+                onError={(e) => {
+                  e.target.onerror = null; // Prevent infinite loop
+                  e.target.src = "https://via.placeholder.com/150?text=User";
+                }}
+              />
+              <span className="text-white truncate flex-1" title={user?.name}>{user?.name || 'Guest User'}</span>
             </div>
 
             {/* Toggle for mobile close */}
             {isMobile && (
               <button
                 onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
-                className="p-1 hover:bg-surface-hover rounded-full transition-colors text-text-muted hover:text-white"
+                className="p-1 hover:bg-surface-hover rounded-full transition-colors text-text-muted hover:text-white shrink-0 ml-2"
               >
                 <ChevronLeft size={20} />
               </button>

@@ -497,8 +497,8 @@ const PocketCanvas = (props) => {
     <div className="relative h-full w-full">
       {/* Custom Top Bar Overlay */}
       <div
-        className="absolute top-0 left-0 right-0 h-[50px] z-[5] pointer-events-none flex items-center"
-        style={{ paddingLeft: '60px' }} // Approx space for Files button
+        className="absolute top-1 left-0 right-0 h-[60px] z-[5] pointer-events-none flex items-center"
+        style={{ paddingLeft: '60px' }} // Adjusted to align with Excalidraw menu icon
       >
         <div className="pointer-events-auto flex items-center bg-surface-light/80 backdrop-blur-sm rounded-md px-2 py-1 gap-2 border border-border shadow-sm">
 

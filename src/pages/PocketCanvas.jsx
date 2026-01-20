@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Share2, Palette, Plus, X } from 'lucide-react'; // Using Palette for Canvas icon to match sidebar
+import React, { useEffect, useState, useRef } from 'react';
+import { Share2, Palette, Plus, X, MoreVertical, Trash2, AlertTriangle } from 'lucide-react'; // Added icons
 import usePocketCanvasStore from '../store/pocketCanvasStore';
 import { useAuth } from '../context/AuthContext';
-import { getUserCanvases } from '../services/canvasService';
+import { getUserCanvases, deleteCanvas } from '../services/canvasService'; // Added deleteCanvas
 import { saveCanvas } from '../api/api';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -17,6 +17,27 @@ const PocketCanvas = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newCanvasName, setNewCanvasName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Menu & Deletion State
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState(null); // Track which canvas is pending deletion
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActiveMenuId(null);
+        setDeleteConfirmationId(null); // Reset confirmation on close
+      }
+    };
+    if (activeMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuId]);
 
   const fetchCanvases = async () => {
     if (user?._id) {
@@ -66,6 +87,45 @@ const PocketCanvas = () => {
     }
   };
 
+  const handleMenuClick = (e, canvasId) => {
+    e.stopPropagation();
+    if (activeMenuId === canvasId) {
+      setActiveMenuId(null);
+      setDeleteConfirmationId(null);
+    } else {
+      setActiveMenuId(canvasId);
+      setDeleteConfirmationId(null);
+    }
+  };
+
+  const handleDeleteClick = (e, canvasId) => {
+    e.stopPropagation();
+    if (deleteConfirmationId === canvasId) {
+      // Confirmed, proceed to delete
+      confirmDelete(canvasId);
+    } else {
+      // First click, show confirmation
+      setDeleteConfirmationId(canvasId);
+    }
+  };
+
+  const confirmDelete = async (canvasId) => {
+    const toastId = toast.loading('Deleting canvas...');
+    try {
+      await deleteCanvas(canvasId);
+      toast.success('Canvas deleted successfully', { id: toastId });
+
+      // Update local state directly for speed
+      setCanvases(prev => prev.filter(c => c._id !== canvasId));
+
+      setActiveMenuId(null);
+      setDeleteConfirmationId(null);
+    } catch (error) {
+      console.error("Delete failed", error);
+      toast.error('Failed to delete canvas', { id: toastId });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-8 pt-12 relative">
       <div className="flex items-center justify-between mb-8">
@@ -80,7 +140,7 @@ const PocketCanvas = () => {
       </div>
 
       {/* Created Canvas Section */}
-      <section className="mb-10">
+      <section className="mb-10 min-h-[50vh]">
         <div className="flex items-center space-x-2 text-text-muted mb-4">
           <Share2 size={16} />
           <h2 className="text-sm font-semibold uppercase tracking-wider">Created Canvas</h2>
@@ -97,15 +157,51 @@ const PocketCanvas = () => {
             {canvases.map((canvas) => (
               <div
                 key={canvas._id}
-                className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border flex flex-col justify-between group h-32 cursor-pointer"
+                className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border flex flex-col justify-between group h-32 cursor-pointer relative"
                 onClick={() => openCanvasWithId(canvas._id)}
               >
                 {/* Note: We refrain from adding Link logic yet as requested, just displaying details */}
                 <div className="flex items-start justify-between">
                   <Palette className="text-text-muted group-hover:text-purple-400 transition-colors" size={24} />
-                  <span className="text-xs text-text-muted">{new Date(canvas.updatedAt).toLocaleDateString()}</span>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-text-muted">{new Date(canvas.updatedAt).toLocaleDateString()}</span>
+
+                    {/* Menu Trigger */}
+                    <button
+                      className="text-text-muted hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors relative z-20"
+                      onClick={(e) => handleMenuClick(e, canvas._id)}
+                    >
+                      <MoreVertical size={14} />
+                    </button>
+
+                    {/* Popup Menu */}
+                    {activeMenuId === canvas._id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute top-8 right-2 w-48 bg-[#252526] border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-1 ring-white/5"
+                        onClick={(e) => e.stopPropagation()} // Prevent card click
+                      >
+                        <button
+                          onClick={(e) => handleDeleteClick(e, canvas._id)}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors 
+                              ${deleteConfirmationId === canvas._id
+                              ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              : 'text-text hover:text-red-400 hover:bg-white/5'
+                            }`}
+                        >
+                          <span className="flex items-center space-x-2">
+                            {deleteConfirmationId === canvas._id ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
+                            <span>{deleteConfirmationId === canvas._id ? 'Confirm Delete' : 'Delete'}</span>
+                          </span>
+                          {deleteConfirmationId !== canvas._id && <Trash2 size={12} className="opacity-50" />}
+                          {deleteConfirmationId === canvas._id && <span className="sr-only">Confirm</span>}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <span className="font-medium text-text group-hover:text-white truncate mt-2">{canvas.name}</span>
+                <span className="font-medium text-text group-hover:text-white truncate mt-2 pr-6" title={canvas.name}>{canvas.name}</span>
               </div>
             ))}
           </div>
