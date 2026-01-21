@@ -5,6 +5,7 @@ import { useFileSystem } from '../../context/FileSystemContext';
 import SidebarItem from './SidebarItem';
 import CreateButton from '../UI/CreateButton';
 import usePocketCanvasStore from '../../store/pocketCanvasStore';
+import { getUserCanvases } from '../../services/canvasService'; // Import canvas service
 
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, Settings } from 'lucide-react';
@@ -16,6 +17,17 @@ const Sidebar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
+  const [canvases, setCanvases] = useState([]); // State for canvases
+  const { openCanvasWithId } = usePocketCanvasStore(); // To open canvas from search
+
+  // Fetch canvases for search
+  useEffect(() => {
+    if (user?._id) {
+      getUserCanvases(user._id).then(data => setCanvases(data)).catch(err => console.error("Sidebar search: failed to load canvases", err));
+    } else {
+      setCanvases([]);
+    }
+  }, [user]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -78,6 +90,7 @@ const Sidebar = () => {
 
   const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFolders = folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredCanvases = canvases.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const { folders: rootFolders, files: rootFiles } = getRootContents();
 
@@ -311,7 +324,7 @@ const Sidebar = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-2">
-                {searchQuery && filteredFiles.length === 0 && filteredFolders.length === 0 && (
+                {searchQuery && filteredFiles.length === 0 && filteredFolders.length === 0 && filteredCanvases.length === 0 && (
                   <div className="p-8 text-center text-text-muted">No results found for "{searchQuery}"</div>
                 )}
 
@@ -332,6 +345,26 @@ const Sidebar = () => {
                   </div>
                 )}
 
+                {filteredCanvases.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Canvases</h4>
+                    {filteredCanvases.map(canvas => (
+                      <div
+                        key={canvas._id}
+                        onClick={() => {
+                          openCanvasWithId(canvas._id);
+                          setIsSearchOpen(false);
+                          navigate('/pocket-canvas');
+                        }}
+                        className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"
+                      >
+                        <Palette size={16} className="text-text-muted group-hover:text-purple-400" />
+                        <span>{canvas.name}</span>
+                        <span className="text-xs text-text-muted ml-auto">Canvas</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {filteredFiles.length > 0 && (
                   <div className="mb-4">
                     <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Files</h4>

@@ -134,7 +134,7 @@ const PocketCanvas = () => {
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center space-x-2 bg-white text-black px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors shadow-lg"
         >
-          <Plus size={18} />
+          <Palette size={18} />
           <span>Create</span>
         </button>
       </div>
