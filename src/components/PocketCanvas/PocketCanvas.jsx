@@ -230,6 +230,31 @@ const PocketCanvas = (props) => {
     activeCanvasIdRef.current = activeCanvasId;
   }, [activeCanvasId]);
 
+  const cleanCanvasData = (elements, files) => {
+    // 1. Filter out deleted elements
+    const visibleElements = elements.filter(el => !el.isDeleted);
+
+    // 2. Identify used file IDs from visible elements
+    const usedFileIds = new Set();
+    visibleElements.forEach(el => {
+      if (el.fileId) {
+        usedFileIds.add(el.fileId);
+      }
+    });
+
+    // 3. Filter files object to only include used files
+    const cleanFiles = {};
+    if (files) {
+      Object.keys(files).forEach(fileId => {
+        if (usedFileIds.has(fileId)) {
+          cleanFiles[fileId] = files[fileId];
+        }
+      });
+    }
+
+    return { elements: visibleElements, files: cleanFiles };
+  };
+
   const handleSave = async (elements, appState, files, currentName) => {
     if (!user) return;
 
@@ -286,11 +311,19 @@ const PocketCanvas = (props) => {
 
       console.log('PocketCanvas: Saving canvas...', { name: currentName, id: activeCanvasIdRef.current, isCreation });
 
+      // Clean the data before sending to server
+      const { elements: cleanElements, files: cleanFiles } = cleanCanvasData(elements, files);
+
+      const payloadData = {
+        ...data,
+        elements: cleanElements,
+        files: cleanFiles
+      };
 
       const payload = {
         userId: user._id,
         name: currentName,
-        data: JSON.stringify(data),
+        data: JSON.stringify(payloadData),
         canvasId: activeCanvasIdRef.current // Use ref for latest ID
       };
 
