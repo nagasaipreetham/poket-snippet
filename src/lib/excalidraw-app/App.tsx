@@ -1,6 +1,5 @@
 import {
   Excalidraw,
-  LiveCollaborationTrigger,
   TTDDialogTrigger,
   CaptureUpdateAction,
   reconcileElements,
@@ -42,9 +41,7 @@ import {
   XBrandIcon,
   DiscordIcon,
   ExcalLogo,
-  usersIcon,
   exportToPlus,
-  share,
   youtubeIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { isElementLink } from "@excalidraw/element";
@@ -919,13 +916,7 @@ const ExcalidrawWrapper = (props: {
           return (
             <div className="excalidraw-ui-top-right">
               {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-                editorInterface={editorInterface}
-              />
+
               {props.customTopRightUI}
             </div>
           );
@@ -1025,25 +1016,7 @@ const ExcalidrawWrapper = (props: {
 
         <CommandPalette
           customCommandPaletteItems={[
-            {
-              label: t("labels.liveCollaboration"),
-              category: DEFAULT_CATEGORIES.app,
-              keywords: [
-                "team",
-                "multiplayer",
-                "share",
-                "public",
-                "session",
-                "invite",
-              ],
-              icon: usersIcon,
-              perform: () => {
-                setShareDialogState({
-                  isOpen: true,
-                  type: "collaborationOnly",
-                });
-              },
-            },
+
             {
               label: t("roomDialog.button_stopSession"),
               category: DEFAULT_CATEGORIES.app,
@@ -1066,26 +1039,7 @@ const ExcalidrawWrapper = (props: {
                 }
               },
             },
-            {
-              label: t("labels.share"),
-              category: DEFAULT_CATEGORIES.app,
-              predicate: true,
-              icon: share,
-              keywords: [
-                "link",
-                "shareable",
-                "readonly",
-                "export",
-                "publish",
-                "snapshot",
-                "url",
-                "collaborate",
-                "invite",
-              ],
-              perform: async () => {
-                setShareDialogState({ isOpen: true, type: "share" });
-              },
-            },
+
             {
               label: "GitHub",
               icon: GithubIcon,

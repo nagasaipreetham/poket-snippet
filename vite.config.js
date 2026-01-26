@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+
   define: {
     "process.env.IS_PREACT": JSON.stringify("false"),
   },
+
   resolve: {
     alias: {
       "@excalidraw/excalidraw": "/src/lib/excalidraw/excalidraw",
@@ -16,22 +17,40 @@ export default defineConfig({
       "@excalidraw/math": "/src/lib/excalidraw/math/src",
     },
   },
+
+  // DEV ONLY (safe to keep)
   server: {
     host: true,
     port: 5173,
-    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: false,
       },
     },
   },
+
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          excalidraw: ['@excalidraw/excalidraw'],
+        },
+      },
+    },
+  },
+
   css: {
     preprocessorOptions: {
       scss: {
-        silenceDeprecations: ["legacy-js-api", "import", "global-builtin", "color-functions"],
+        silenceDeprecations: [
+          "legacy-js-api",
+          "import",
+          "global-builtin",
+          "color-functions",
+        ],
         api: 'modern-compiler',
       },
     },
