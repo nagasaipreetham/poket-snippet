@@ -23,12 +23,56 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
     monaco.editor.setTheme('poket-dark');
   };
 
+  // Map compiler IDs to Monaco-recognized language IDs
+  const monacoLanguageMap = {
+    'assembly': 'plaintext',
+    'bash': 'shell',
+    'basic': 'vb',
+    'c': 'c',
+    'cpp': 'cpp',
+    'clojure': 'clojure',
+    'csharp': 'csharp',
+    'cobol': 'plaintext',
+    'lisp': 'clojure', // Clojure is the closest built-in for Lisp
+    'd': 'plaintext',
+    'elixir': 'elixir',
+    'erlang': 'plaintext',
+    'fsharp': 'fsharp',
+    'fortran': 'plaintext',
+    'go': 'go',
+    'groovy': 'plaintext',
+    'haskell': 'plaintext',
+    'java': 'java',
+    'javascript': 'javascript',
+    'kotlin': 'kotlin',
+    'lua': 'lua',
+    'objectivec': 'objective-c',
+    'ocaml': 'plaintext',
+    'octave': 'plaintext',
+    'pascal': 'pascal',
+    'perl': 'perl',
+    'php': 'php',
+    'plaintext': 'plaintext',
+    'prolog': 'plaintext',
+    'python': 'python',
+    'r': 'r',
+    'ruby': 'ruby',
+    'rust': 'rust',
+    'scala': 'scala',
+    'sql': 'sql',
+    'swift': 'swift',
+    'typescript': 'typescript',
+    'vbnet': 'vb',
+  };
+
+  const monacoLanguage = monacoLanguageMap[language] || language;
+
   return (
     <div className="h-full w-full overflow-hidden rounded-lg border border-border shadow-sm">
       <Editor
         height="100%"
         defaultLanguage="javascript"
-        language={language}
+        language={monacoLanguage}
         value={value}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
@@ -38,11 +82,12 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
           fontSize: fontSize,
           fontFamily: 'Fira Code, monospace',
           scrollBeyondLastLine: false,
-          automaticLayout: true, // Re-enabled for reliable rendering (Safe Mode prevents crashes)
+          automaticLayout: true,
           padding: { top: 16 },
           scrollbar: {
             alwaysConsumeMouseWheel: false
-          }
+          },
+          renderValidationDecorations: 'off'
         }}
       />
     </div>
