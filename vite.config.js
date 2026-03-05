@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
@@ -9,7 +10,12 @@ export default defineConfig({
   },
 
   resolve: {
+    // Force a single copy of React — prevents "Invalid hook call" in monorepo setups
+    // where excalidraw-app has its own local node_modules/react
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
     alias: {
+      "react": path.resolve("./node_modules/react"),
+      "react-dom": path.resolve("./node_modules/react-dom"),
       "@excalidraw/excalidraw": "/src/lib/excalidraw/excalidraw",
       "@excalidraw/utils": "/src/lib/excalidraw/utils/src",
       "@excalidraw/element": "/src/lib/excalidraw/element/src",

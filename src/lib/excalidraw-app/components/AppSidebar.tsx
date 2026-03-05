@@ -13,9 +13,6 @@ export const AppSidebar = () => {
 
   return (
     <DefaultSidebar>
-      <DefaultSidebar.TabTriggers>
-        {/* Removed Comments and Presentation triggers */}
-      </DefaultSidebar.TabTriggers>
       {/* Removed Comments and Presentation tabs */}
     </DefaultSidebar>
   );

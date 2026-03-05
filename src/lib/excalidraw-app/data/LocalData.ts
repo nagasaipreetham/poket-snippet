@@ -43,7 +43,6 @@ import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 
 import { FileManager } from "./FileManager";
 import { Locker } from "./Locker";
-import { updateBrowserStateVersion } from "./tabSync";
 
 const filesStore = createStore("files-db", "files-store");
 
@@ -94,7 +93,6 @@ const saveDataStateToLocalStorage = (
       STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
       JSON.stringify(_appState),
     );
-    updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
     if (localStorageQuotaExceeded) {
       appJotaiStore.set(localStorageQuotaExceededAtom, false);
     }
@@ -202,11 +200,6 @@ export class LocalData {
     async saveFiles({ addedFiles }) {
       const savedFiles = new Map<FileId, BinaryFileData>();
       const erroredFiles = new Map<FileId, BinaryFileData>();
-
-      // before we use `storage` event synchronization, let's update the flag
-      // optimistically. Hopefully nothing fails, and an IDB read executed
-      // before an IDB write finishes will read the latest value.
-      updateBrowserStateVersion(STORAGE_KEYS.VERSION_FILES);
 
       await Promise.all(
         [...addedFiles].map(async ([id, fileData]) => {

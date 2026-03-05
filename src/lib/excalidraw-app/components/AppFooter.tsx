@@ -1,9 +1,6 @@
 import { Footer } from "@excalidraw/excalidraw/index";
 import React from "react";
 
-import { isExcalidrawPlusSignedUser } from "../app_constants";
-
-import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
 import { EncryptedIcon } from "./EncryptedIcon";
 
 export const AppFooter = React.memo(
@@ -17,7 +14,6 @@ export const AppFooter = React.memo(
             alignItems: "center",
           }}
         >
-          {isVisualDebuggerEnabled() && <DebugFooter onChange={onChange} />}
         </div>
       </Footer>
     );

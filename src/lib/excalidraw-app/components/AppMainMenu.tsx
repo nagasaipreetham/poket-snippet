@@ -5,14 +5,10 @@ import React from "react";
 
 import type { Theme } from "@excalidraw/element/types";
 
-import { LanguageList } from "../app-language/LanguageList";
 
 
 
 export const AppMainMenu: React.FC<{
-  onCollabDialogOpen: () => any;
-  isCollaborating: boolean;
-  isCollabEnabled: boolean;
   theme: Theme | "system";
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
@@ -38,9 +34,8 @@ export const AppMainMenu: React.FC<{
         theme={props.theme}
         onSelect={props.setTheme}
       />
-      <MainMenu.ItemCustom>
-        <LanguageList style={{ width: "100%" }} />
-      </MainMenu.ItemCustom>
+
+
       <MainMenu.DefaultItems.ChangeCanvasBackground />
     </MainMenu>
   );
