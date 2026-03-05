@@ -343,6 +343,7 @@ const SnippetDetailContent = () => {
                 ) : (
                   <SnippetModule
                     module={module}
+                    snippetId={id}
                     isDragging={isDragging}
                     onUpdate={(updates) => handleModuleUpdate(index, updates)}
                   />

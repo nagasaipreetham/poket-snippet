@@ -10,7 +10,7 @@ import hljs from 'highlight.js'; // Reverted: Auto-detection via highlight.js
 
 import { useAuth } from '../../context/AuthContext';
 
-const SnippetModule = ({ module, onUpdate, isDragging }) => {
+const SnippetModule = ({ module, snippetId, onUpdate, isDragging }) => {
   const { setCode: setCompilerCode } = useCompilerStore();
   const { setInput: setChatInput, setMode: setChatMode, setIsOpen, input: chatInput } = useChatStore();
   const { user } = useAuth();
@@ -139,6 +139,70 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
     const currentCustom = module.customMetadata || [];
     const newMeta = currentCustom.filter(m => m.id !== fieldId);
     onUpdate({ customMetadata: newMeta });
+  };
+
+  // LeetCode Recommendations State
+  const [leetcodeRecommendations, setLeetcodeRecommendations] = useState(null);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+
+  // Fetch Existing Recommendations
+  useEffect(() => {
+    if (!snippetId) return;
+    const fetchRecommendations = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const token = storedUser ? JSON.parse(storedUser).accessToken : null;
+
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/snippets/${snippetId}/leetcode-recommendations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLeetcodeRecommendations(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch leetcode recommendations", err);
+      }
+    };
+    fetchRecommendations();
+  }, [snippetId]);
+
+  // Handle Find Similar
+  const handleFindSimilarLeetcode = async () => {
+    if (!snippetId) {
+      toast.error('Please let the snippet save first before generating recommendations!');
+      return;
+    }
+    if (!module.content || !module.content.trim()) {
+      toast.error('Snippet is empty!');
+      return;
+    }
+    setIsLoadingRecommendations(true);
+    try {
+      const storedUser = localStorage.getItem('user');
+      const token = storedUser ? JSON.parse(storedUser).accessToken : null;
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/snippets/${snippetId}/leetcode-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: module.content })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLeetcodeRecommendations(data);
+        toast.success('LeetCode recommendations generated!', { position: 'bottom-left' });
+      } else {
+        toast.error('Failed to generate recommendations. Please try again.', { position: 'bottom-left' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error connecting to Server', { position: 'bottom-left' });
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
   };
 
   return (
@@ -294,7 +358,95 @@ const SnippetModule = ({ module, onUpdate, isDragging }) => {
         >
           <span>+ Custom</span>
         </button>
+
+        {/* LeetCode Find Similar Button */}
+        <button
+          onClick={handleFindSimilarLeetcode}
+          disabled={isLoadingRecommendations}
+          className="ml-auto flex items-center space-x-2 border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black px-4 py-1.5 rounded-sm text-xs font-bold uppercase transition-colors disabled:opacity-50"
+          style={{ marginLeft: 'auto' }}
+        >
+          <span>Find similar</span>
+          {isLoadingRecommendations ? (
+            <div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full ml-1" />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 ml-1">
+              <path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.7-.152-.7-.863 0-.711.233-1.396.7-.864l4.332-4.363c.467-.467 1.112-.662 1.824-.662s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-7.015 0l-4.341 4.377c-.979.989-1.514 2.337-1.514 3.753s.535 2.764 1.514 3.753l4.341 4.377a5.006 5.006 0 0 0 3.508 1.486c1.286 0 2.502-.505 3.507-1.486l2.609-2.636c.514-.514.496-1.365-.039-1.901-.536-.535-1.387-.553-1.901-.038z" />
+              <path d="M20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" />
+            </svg>
+          )}
+        </button>
       </div>
+
+      {/* RECOMMENDATIONS SECTION */}
+      {leetcodeRecommendations && (
+        <div className="p-5 bg-[#1e1e1e] border-t border-white/10 flex flex-col gap-4">
+          <div className="text-sm font-semibold text-white flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="#EAB308" className="w-5 h-5"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.7-.152-.7-.863 0-.711.233-1.396.7-.864l4.332-4.363c.467-.467 1.112-.662 1.824-.662s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-7.015 0l-4.341 4.377c-.979.989-1.514 2.337-1.514 3.753s.535 2.764 1.514 3.753l4.341 4.377a5.006 5.006 0 0 0 3.508 1.486c1.286 0 2.502-.505 3.507-1.486l2.609-2.636c.514-.514.496-1.365-.039-1.901-.536-.535-1.387-.553-1.901-.038z" /><path d="M20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg> Recommended LeetCode Practice</span>
+            {leetcodeRecommendations.tagsAssigned?.length > 0 && (
+              <span className="text-xs text-text-muted font-normal">
+                (Based on: <span className="text-white ml-1">{leetcodeRecommendations.tagsAssigned.join(', ')}</span>)
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+            {/* EASY */}
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[11px] font-black text-green-500 uppercase tracking-widest pl-1 mb-1">Easy</h3>
+              {leetcodeRecommendations.easy?.length === 0 && <span className="text-xs text-text-muted italic pl-1">No matches</span>}
+              {leetcodeRecommendations.easy?.map(q => (
+                <a
+                  key={q.frontendQuestionId}
+                  href={`https://leetcode.com/problems/${q.titleSlug}/description/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col border border-green-500/30 bg-transparent hover:bg-green-500/10 hover:border-green-500/50 p-3 rounded-lg text-xs transition-all duration-200"
+                >
+                  <span className="font-semibold text-green-400 group-hover:text-green-300 mb-1 leading-tight">{q.frontendQuestionId}. {q.title}</span>
+                  <span className="text-[10px] text-green-500/60 font-mono">{Number(q.acRate).toFixed(1)}% Acceptance</span>
+                </a>
+              ))}
+            </div>
+
+            {/* MEDIUM */}
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[11px] font-black text-orange-500 uppercase tracking-widest pl-1 mb-1">Medium</h3>
+              {leetcodeRecommendations.medium?.length === 0 && <span className="text-xs text-text-muted italic pl-1">No matches</span>}
+              {leetcodeRecommendations.medium?.map(q => (
+                <a
+                  key={q.frontendQuestionId}
+                  href={`https://leetcode.com/problems/${q.titleSlug}/description/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col border border-orange-500/30 bg-transparent hover:bg-orange-500/10 hover:border-orange-500/50 p-3 rounded-lg text-xs transition-all duration-200"
+                >
+                  <span className="font-semibold text-orange-400 group-hover:text-orange-300 mb-1 leading-tight">{q.frontendQuestionId}. {q.title}</span>
+                  <span className="text-[10px] text-orange-500/60 font-mono">{Number(q.acRate).toFixed(1)}% Acceptance</span>
+                </a>
+              ))}
+            </div>
+
+            {/* HARD */}
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[11px] font-black text-red-500 uppercase tracking-widest pl-1 mb-1">Hard</h3>
+              {leetcodeRecommendations.hard?.length === 0 && <span className="text-xs text-text-muted italic pl-1">No matches</span>}
+              {leetcodeRecommendations.hard?.map(q => (
+                <a
+                  key={q.frontendQuestionId}
+                  href={`https://leetcode.com/problems/${q.titleSlug}/description/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col border border-red-500/30 bg-transparent hover:bg-red-500/10 hover:border-red-500/50 p-3 rounded-lg text-xs transition-all duration-200"
+                >
+                  <span className="font-semibold text-red-400 group-hover:text-red-300 mb-1 leading-tight">{q.frontendQuestionId}. {q.title}</span>
+                  <span className="text-[10px] text-red-500/60 font-mono">{Number(q.acRate).toFixed(1)}% Acceptance</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
