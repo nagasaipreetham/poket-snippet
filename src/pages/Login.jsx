@@ -6,6 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import SnippetModule from '../components/Modules/SnippetModule';
+import CompilerInterface from '../components/Compiler/CompilerInterface';
+import useCompilerStore from '../store/compilerStore';
+import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2 } from 'lucide-react';
 
 const DottedBackground = () => {
   const canvasRef = useRef(null);
@@ -201,6 +204,10 @@ const Login = () => {
   const [isHoveringNav, setIsHoveringNav] = useState(false);
   const snippetSectionRef = useRef(null);
   const isSnippetInView = useInView(snippetSectionRef, { margin: "-50% 0% -20% 0%", once: true });
+  const compilerSectionRef = useRef(null);
+  const isCompilerInView = useInView(compilerSectionRef, { margin: "-50% 0% -20% 0%", once: true });
+  const compilerContainerRef = useRef(null);
+  const { setCode: setCompilerCode } = useCompilerStore();
 
 
   // Snippet Preview State & Logic
@@ -261,6 +268,185 @@ const Login = () => {
     }, 16); // 16ms (~60fps) is much better for performance than 5ms
     return () => clearInterval(interval);
   }, [isSnippetInView]);
+
+  // Compiler Demo Animation Logic
+  const fullCompilerCode = `import java.util.Scanner;
+
+public class BinarySearchExample {
+    public static void main(String[] args) {
+
+        int[] arr = {2, 4, 6, 8, 10, 12, 14};
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter the target element: ");
+        int target = scanner.nextInt();
+
+        int low = 0;
+        int high = arr.length - 1;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (arr[mid] == target) {
+                System.out.println("Element found at index: " + mid);
+                return;
+            } 
+            else if (arr[mid] < target) {
+                low = mid + 1;
+            } 
+            else {
+                high = mid - 1;
+            }
+        }
+
+        System.out.println("Element not found");
+    }
+}`;
+  const fullCompilerInput = `Enter the target element: 10`;
+
+  useEffect(() => {
+    if (!isCompilerInView) return;
+
+    let codeIndex = 0;
+    let inputIndex = 0;
+    let isDemoComplete = false;
+
+    // reset compiler state first
+    setCompilerCode("");
+
+    // Set Java Language visually without popup
+    setTimeout(() => {
+      const currentLangBtn = Array.from(compilerContainerRef.current?.querySelectorAll('button') || [])
+        .find(b => b.textContent.includes('JavaScript') || b.textContent.includes('Python') || b.textContent.includes('Java'));
+
+      if (currentLangBtn) {
+        const span = currentLangBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Java';
+          span.style.color = '#E76F00';
+        }
+      }
+      setTimeout(() => {
+        startTypingSequence();
+      }, 500);
+    }, 500);
+
+    const outputHtml = `
+      <div class="text-gray-300 font-mono text-[11px]">
+        <div class="flex items-center gap-2 border-b border-white/5 pb-2 mb-2">
+           <span class="text-gray-500 font-semibold uppercase text-[9px]">Status:</span>
+           <span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">Success</span>
+           <span class="text-gray-600 text-[9px] ml-auto">Time: 0.12s</span>
+        </div>
+        <div class="opacity-70 font-mono">Enter the target element: 10</div>
+        <div class="text-white font-bold mt-1 bg-white/5 py-1 px-2 rounded inline-block border border-white/10 font-mono">Element found at index: 4</div>
+      </div>
+    `;
+
+    // Persistence helper
+    const applyMockResults = () => {
+      // Re-inject output data if visible
+      const outputArea = compilerContainerRef.current?.querySelector('.overflow-auto');
+      if (outputArea && !outputArea.querySelector('textarea')) {
+        outputArea.innerHTML = outputHtml;
+      }
+
+      // Re-inject input data if visible
+      const textarea = compilerContainerRef.current?.querySelector('textarea[placeholder*="input"]');
+      if (textarea) {
+        const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+        nativeTextAreaValueSetter.call(textarea, fullCompilerInput);
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    };
+
+    // Tab click listener for persistence
+    const handleTabClick = (e) => {
+      if (!isDemoComplete) return; // Prevent simulated clicks from triggering results prematurely
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const text = btn.textContent || '';
+      if (text.includes('Input') || text.includes('Output')) {
+        // Longer timeout to allow React to mount the respective panel
+        setTimeout(applyMockResults, 150);
+      }
+    };
+
+    const container = compilerContainerRef.current;
+    if (container) {
+      container.addEventListener('click', handleTabClick, true); // Capture phase to catch clicks early
+    }
+
+    const startTypingSequence = () => {
+      const typeCode = setInterval(() => {
+        if (codeIndex < fullCompilerCode.length) {
+          setCompilerCode(fullCompilerCode.substring(0, codeIndex + 3));
+          codeIndex += 3;
+        } else {
+          clearInterval(typeCode);
+
+          // Phase 2: Input Animation
+          setTimeout(() => {
+            // Switch to Input tab
+            const tabs = Array.from(compilerContainerRef.current?.querySelectorAll('button') || []);
+            const inputTab = tabs.find(b => b.textContent && b.textContent.includes('Input'));
+            if (inputTab) inputTab.click();
+
+            // Wait for Input textarea to mount securely
+            setTimeout(() => {
+              const typeInput = setInterval(() => {
+                if (inputIndex < fullCompilerInput.length) {
+                  // Use placeholder-based selector to be 100% sure it's the input box
+                  const textarea = compilerContainerRef.current?.querySelector('textarea[placeholder*="input"]');
+                  if (textarea) {
+                    const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                    nativeTextAreaValueSetter.call(textarea, fullCompilerInput.substring(0, inputIndex + 1));
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                  inputIndex += 1;
+                } else {
+                  clearInterval(typeInput);
+
+                  // Phase 3: Trigger Run
+                  setTimeout(() => {
+                    const runBtn = Array.from(compilerContainerRef.current?.querySelectorAll('button') || [])
+                      .find(b => b.textContent.includes('Run'));
+
+                    if (runBtn) {
+                      runBtn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Running';
+                      runBtn.classList.add('opacity-70');
+
+                      setTimeout(() => {
+                        runBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run';
+                        runBtn.classList.remove('opacity-70');
+
+                        // Switch to Output tab
+                        const outputTab = Array.from(compilerContainerRef.current?.querySelectorAll('button') || [])
+                          .find(b => b.textContent && b.textContent.includes('Output'));
+                        if (outputTab) outputTab.click();
+
+                        setTimeout(() => {
+                          applyMockResults();
+                          isDemoComplete = true; // Enable persistence for manual 
+                        }, 200);
+                      }, 2000);
+                    }
+                  }, 500);
+                }
+              }, 60); // Slightly more realistic typing speed
+            }, 400); // Increased mount delay to 400ms for safety
+          }, 800);
+        }
+      }, 16);
+    };
+
+    return () => {
+      clearInterval(typeCode);
+      if (container) {
+        container.removeEventListener('click', handleTabClick, true);
+      }
+    };
+  }, [isCompilerInView, setCompilerCode]);
 
   const handleSnippetPreviewUpdate = (updates) => {
     let newUpdates = { ...updates };
@@ -583,7 +769,7 @@ const Login = () => {
                     transition={{ delay: 0.2, duration: 0.8 }}
                     className="text-6xl md:text-8xl font-black tracking-tighter mb-4 text-white font-sans"
                   >
-                    Pocket <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Snippet</span>
+                    Poket <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Snippet</span>
                   </motion.h1>
 
                   <motion.h2
@@ -601,7 +787,7 @@ const Login = () => {
                     transition={{ delay: 0.6, duration: 0.8 }}
                     className="text-gray-400 text-lg leading-relaxed max-w-xl md:mx-0"
                   >
-                    Pocket Snippet helps in organizing and accessing code snippets and allows you to retrieve them from anywhere.
+                    Poket Snippet helps in organizing and accessing code snippets and allows you to retrieve them from anywhere.
                     It also includes AI-powered features that help refine and improve your code.
                   </motion.p>
                 </motion.div>
@@ -614,7 +800,7 @@ const Login = () => {
       {/* Snippet Module Preview Section */}
       <section
         ref={snippetSectionRef}
-        className="w-full max-w-7xl mx-auto px-6 py-20 relative z-10"
+        className="w-full max-w-7xl mx-auto px-6 pt-8 pb-20 relative z-10"
       >
         <div className="flex flex-col lg:flex-row items-start justify-between gap-16 lg:gap-24">
 
@@ -823,6 +1009,143 @@ const Login = () => {
               </AnimatePresence>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      <section
+        ref={compilerSectionRef}
+        className="w-full max-w-7xl mx-auto px-6 py-20 relative z-10"
+      >
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-10">
+
+          {/* Left Column: Compiler Demo UI (54%) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[57%] flex flex-col"
+          >
+            <div
+              ref={compilerContainerRef}
+              className="compiler-preview w-full h-[546px] shadow-2xl shadow-blue-900/10 rounded-xl border border-white/10 overflow-hidden relative"
+            >
+              <CompilerInterface />
+            </div>
+          </motion.div>
+
+          <style>{`
+            /* Strict Interaction Restrictions for Compiler Demo */
+            .compiler-preview .monaco-editor .inputarea,
+            .compiler-preview textarea {
+                pointer-events: none !important;
+            }
+            
+            /* Block Toolbar actions (Language, Convert, Run, Auto Complete) */
+            .compiler-preview > div > div:first-child button {
+                pointer-events: none !important;
+            }
+            
+            /* Block Resize handle */
+            .compiler-preview .cursor-ns-resize {
+                display: none !important;
+                pointer-events: none !important;
+            }
+
+            .compiler-preview .monaco-editor {
+                border-radius: 0 !important;
+            }
+          `}</style>
+
+          {/* Middle Column: Main Description (21%) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[25%] flex flex-col"
+          >
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2 font-sans tracking-tight">
+                Built-in Compiler
+              </h2>
+              <div className="w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+            </div>
+
+            <div className="floating-nav p-6 rounded-3xl w-full flex-1 border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              <h3 className="text-xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Terminal size={18} className="text-blue-400" />
+                </div>
+                Execution
+              </h3>
+
+              <div className="space-y-6 text-gray-300 text-sm">
+                <div className="flex gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                  <p className="leading-relaxed">
+                    <span className="text-white font-bold text-xs uppercase block mb-1">Write & Run</span>
+                    Compile and execute code instantly without local setup.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+                  <p className="leading-relaxed">
+                    <span className="text-white font-bold text-xs uppercase block mb-1">38 Languages</span>
+                    Support for major languages including Java, Python, and C++.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-white/5">
+                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Compiler v2.0</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Column: AI & Automation Features (21%) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+            className="w-full lg:w-[18%] flex flex-col gap-6"
+          >
+            {/* Box 1: Auto Convert */}
+            <div className="floating-nav p-6 rounded-3xl w-full border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              <h3 className="text-lg font-bold text-white mb-3 tracking-tight flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-lg">
+                  <RefreshCw size={16} className="text-indigo-400" />
+                </div>
+                Auto Convert
+              </h3>
+
+              <p className="text-gray-400 leading-relaxed text-xs">
+                Instantly <span className="text-indigo-400 font-medium">transform your code</span> from one language to another with a single click, maintaining original logic and structure perfectly.
+              </p>
+            </div>
+
+            {/* Box 2: AI Assistant */}
+            <div className="floating-nav p-6 rounded-3xl w-full border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              <h3 className="text-lg font-bold text-white mb-3 tracking-tight flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <Wand2 size={16} className="text-purple-400" />
+                </div>
+                Code Assistant
+              </h3>
+
+              <p className="text-gray-400 leading-relaxed text-xs">
+                AI-powered <span className="text-purple-400 font-medium">auto-complete and bug fixing</span>. Analyze your code in real-time to detect errors and suggest modern optimizations.
+              </p>
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
