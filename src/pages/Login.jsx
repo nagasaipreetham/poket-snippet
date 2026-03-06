@@ -4,7 +4,8 @@ import { toast } from 'react-hot-toast';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
+import SnippetModule from '../components/Modules/SnippetModule';
 
 const DottedBackground = () => {
   const canvasRef = useRef(null);
@@ -198,6 +199,156 @@ const Login = () => {
   const navRef = useRef(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHoveringNav, setIsHoveringNav] = useState(false);
+  const snippetSectionRef = useRef(null);
+  const isSnippetInView = useInView(snippetSectionRef, { margin: "-50% 0% -20% 0%", once: true });
+
+
+  // Snippet Preview State & Logic
+  const fullBinarySearchCode = `public class BinarySearchExample {\n    public static void main(String[] args) {\n\n        int[] arr = {2, 4, 6, 8, 10, 12, 14};\n        int target = 10;\n\n        int low = 0;\n        int high = arr.length - 1;\n\n        while (low <= high) {\n            int mid = (low + high) / 2;\n\n            if (arr[mid] == target) {\n                System.out.println("Element found at index: " + mid);\n                return;\n            } \n            else if (arr[mid] < target) {\n                low = mid + 1;\n            } \n            else {\n                high = mid - 1;\n            }\n        }\n\n        System.out.println("Element not found");\n    }\n}`;
+
+  const [mockSnippet, setMockSnippet] = useState({
+    codeTitle: "Binary Search Implementation",
+    language: "java",
+    content: "",
+    description: "A clear and efficient implementation of the Binary Search algorithm in Java. This O(log n) approach is ideal for searching sorted arrays.",
+    expectedOutput: "Element found at index: 4",
+    customMetadata: []
+  });
+
+  const [isSearchingSimilar, setIsSearchingSimilar] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  const recommendationData = {
+    tagsAssigned: ["Binary Search"],
+    easy: [
+      { acRate: "48.6", difficulty: "Easy", frontendQuestionId: "35", title: "Search Insert Position", titleSlug: "search-insert-position", topicTags: "['Array', 'Binary Search']" },
+      { acRate: "40.1", difficulty: "Easy", frontendQuestionId: "69", title: "Sqrt(x)", titleSlug: "sqrtx", topicTags: "['Math', 'Binary Search']" },
+      { acRate: "69.3", difficulty: "Easy", frontendQuestionId: "222", title: "Count Complete Tree Nodes", titleSlug: "count-complete-tree-nodes", topicTags: "['Binary Search', 'Bit Manipulation', 'Tree', 'Binary Tree']" }
+    ],
+    medium: [
+      { acRate: "42.5", difficulty: "Medium", frontendQuestionId: "33", title: "Search in Rotated Sorted Array", titleSlug: "search-in-rotated-sorted-array", topicTags: "['Array', 'Binary Search']" },
+      { acRate: "46.4", difficulty: "Medium", frontendQuestionId: "34", title: "Find First and Last Position of Element in Sorted Array", titleSlug: "find-first-and-last-position-of-element-in-sorted-array", topicTags: "['Array', 'Binary Search']" },
+      { acRate: "51.9", difficulty: "Medium", frontendQuestionId: "74", title: "Search a 2D Matrix", titleSlug: "search-a-2d-matrix", topicTags: "['Array', 'Binary Search', 'Matrix']" }
+    ],
+    hard: [
+      { acRate: "43.2", difficulty: "Hard", frontendQuestionId: "4", title: "Median of Two Sorted Arrays", titleSlug: "median-of-two-sorted-arrays", topicTags: "['Array', 'Binary Search', 'Divide and Conquer']" },
+      { acRate: "44.0", difficulty: "Hard", frontendQuestionId: "154", title: "Find Minimum in Rotated Sorted Array II", titleSlug: "find-minimum-in-rotated-sorted-array-ii", topicTags: "['Array', 'Binary Search']" },
+      { acRate: "59.5", difficulty: "Hard", frontendQuestionId: "302", title: "Smallest Rectangle Enclosing Black Pixels", titleSlug: "smallest-rectangle-enclosing-black-pixels", topicTags: "['Array', 'Binary Search', 'Depth-First Search', 'Breadth-First Search', 'Matrix']" },
+    ]
+  };
+
+  // Typing effect - Starts when snippet section enters vertical center
+  useEffect(() => {
+    if (!isSnippetInView) return;
+
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex <= fullBinarySearchCode.length) {
+        setMockSnippet(prev => ({
+          ...prev,
+          content: fullBinarySearchCode.slice(0, currentIndex)
+        }));
+        currentIndex += 3; // Chunk characters to reduce re-renders (1/3 the frequency)
+      } else {
+        clearInterval(interval);
+        // Auto-trigger "Find Similar" logic - 2 sec wait as requested
+        setIsSearchingSimilar(true);
+        setTimeout(() => {
+          setIsSearchingSimilar(false);
+          setShowRecommendations(true);
+        }, 2000);
+      }
+    }, 16); // 16ms (~60fps) is much better for performance than 5ms
+    return () => clearInterval(interval);
+  }, [isSnippetInView]);
+
+  const handleSnippetPreviewUpdate = (updates) => {
+    let newUpdates = { ...updates };
+
+    if ('content' in newUpdates) {
+      delete newUpdates.content; // Strict editor freeze
+    }
+
+    // Prevent desc & expected output updates
+    if ('description' in newUpdates && newUpdates.description !== mockSnippet.description) {
+      delete newUpdates.description;
+    }
+    if ('expectedOutput' in newUpdates && newUpdates.expectedOutput !== mockSnippet.expectedOutput) {
+      delete newUpdates.expectedOutput;
+    }
+
+    if ('customMetadata' in newUpdates && newUpdates.customMetadata.length > 1 && newUpdates.customMetadata.length > mockSnippet.customMetadata.length) {
+      toast('Maximum of 1 custom field allowed in preview.', {
+        icon: '🔒',
+        style: { borderRadius: '10px', background: '#333', color: '#fff' }
+      });
+      return;
+    }
+    setMockSnippet(prev => ({ ...prev, ...newUpdates }));
+  };
+
+  const handleSnippetPreviewClick = (e) => {
+    const btn = e.target.closest('button');
+    if (btn) {
+      const text = (btn.innerText || btn.textContent || '').toLowerCase();
+      if (text.includes('run') || text.includes('ask ai') || text.includes('find similar')) {
+        e.stopPropagation();
+        e.preventDefault();
+        toast('This feature is disabled during preview.', {
+          icon: '🔒',
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        });
+      }
+    }
+
+    // Additional click block for text areas in desc and exp output
+    const metadataField = e.target.closest('.border.border-border.rounded-lg.bg-surface');
+    if (metadataField && (e.target.tagName === 'TEXTAREA' || e.target.closest('button'))) {
+      const isCustom = metadataField.querySelector('input[placeholder="Field Title"]');
+      if (!isCustom && e.target.tagName === 'TEXTAREA') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.blur();
+        toast('Editing this text is disabled in preview.', {
+          icon: '🔒', id: 'meta-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
+        });
+      }
+    }
+  };
+
+  const handleSnippetPreviewKeyDown = (e) => {
+    // Block keys for Code Editor (Monaco)
+    if (e.target.closest('.monaco-editor')) {
+      const allowed = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'];
+      if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast('Editing is disabled in preview.', {
+          icon: '🔒', id: 'editor-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
+        });
+      }
+    }
+
+    // Block keys for Metadata Textareas
+    const metadataField = e.target.closest('.border.border-border.rounded-lg.bg-surface');
+    if (metadataField && e.target.tagName === 'TEXTAREA') {
+      const isCustom = metadataField.querySelector('input[placeholder="Field Title"]');
+      if (!isCustom) {
+        const allowed = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'];
+        if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          toast('Editing this text is disabled in preview.', {
+            icon: '🔒', id: 'meta-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
+          });
+        }
+      }
+    }
+  };
 
   const handleMouseMoveNav = (e) => {
     if (navRef.current) {
@@ -460,10 +611,220 @@ const Login = () => {
         </motion.div>
       </div>
 
-      {/* Main Landing Page Content Area */}
-      <main className="min-h-screen flex flex-col items-center justify-center">
-        {/* Future Modules will go here */}
-      </main>
+      {/* Snippet Module Preview Section */}
+      <section
+        ref={snippetSectionRef}
+        className="w-full max-w-7xl mx-auto px-6 py-20 relative z-10"
+      >
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-16 lg:gap-24">
+
+          {/* Left Side: Matter / Info Box */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[30%] flex flex-col items-start"
+          >
+            <div className="mb-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 font-sans tracking-tight">
+                Snippet module
+              </h2>
+              <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+            </div>
+
+            <div className="floating-nav p-8 rounded-3xl w-full border border-white/10 shadow-2xl relative overflow-hidden group">
+              {/* Subtle hover glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              <h3 className="text-2xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-purple-400 fill-current">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm1 9h-4v2h4v-2zm-4 4h4v2h-4v-2zm5 5H6V4h7v5h5v11z" />
+                  </svg>
+                </div>
+                The Smart Notebook
+              </h3>
+
+              <div className="space-y-6 text-gray-300">
+                <div className="flex gap-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                  <p className="leading-relaxed">
+                    <span className="text-white font-bold">Maintain & Organize.</span> Keep your code clean, readable, and perfectly organized for easy access from anywhere.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                  <p className="leading-relaxed">
+                    <span className="text-white font-bold">Metadata.</span> Add powerful context with interactive descriptions, expected outputs, and custom metadata fields.
+                  </p>
+                </div>
+              </div>
+
+              {/* Decorative accent */}
+              <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Feature Showcase</span>
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Second Box: LeetCode Feature (Appears after load) */}
+            <AnimatePresence>
+              {showRecommendations && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="floating-nav p-8 rounded-3xl w-full border border-white/10 shadow-2xl relative overflow-hidden mt-[160px] group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  <h3 className="text-xl font-bold text-white mb-4 tracking-tight flex items-center gap-3">
+                    <div className="p-2 bg-yellow-500/20 rounded-lg">
+                      <img src="/leetcode-logo.png" alt="LeetCode" className="w-5 h-5 object-contain" />
+                    </div>
+                    Smart Recommendations
+                  </h3>
+
+                  <p className="text-gray-400 leading-relaxed text-sm">
+                    Our system analyzes the code stored in your snippets and <span className="text-yellow-500/90 font-medium">suggests relevant LeetCode problems</span> related to that specific concept, helping you bridge the gap between notes and practice.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          <style>{`
+            /* Strict Read-Only for Monaco Editor */
+            .snippet-preview .monaco-editor .inputarea {
+                display: none !important;
+            }
+            /* Visual Merge: Make Module appear as part of the container */
+            .snippet-preview > div:first-child {
+                border: none !important;
+                border-radius: 12px 12px 0 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+                background-color: transparent !important;
+            }
+            /* Fix footer bar height and line */
+            .snippet-preview .h-10.bg-\\[\\#1e1e1e\\].border-t {
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+            /* Reduce height of code editor by 10% */
+            .snippet-preview .bg-\\[\\#191919\\].relative.group {
+                height: 450px !important;
+            }
+          `}</style>
+
+          {/* Right Side: Interactive Module Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[62%] flex flex-col items-center"
+          >
+            <div
+              className="snippet-preview w-full shadow-2xl shadow-purple-900/10 rounded-xl border border-white/10 bg-[#1e1e1e] transition-all overflow-hidden relative"
+              onClickCapture={handleSnippetPreviewClick}
+              onKeyDownCapture={handleSnippetPreviewKeyDown}
+            >
+              <SnippetModule
+                module={mockSnippet}
+                snippetId="preview-id"
+                onUpdate={handleSnippetPreviewUpdate}
+                isDragging={false}
+              />
+
+              {/* Integrated Loading Overlay - Replaces/Overlays the bottom section */}
+              <AnimatePresence>
+                {isSearchingSimilar && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute bottom-0 left-0 right-0 h-10 bg-[#1e1e1e] flex items-center px-4 z-20"
+                  >
+                    <div className="ml-auto flex items-center space-x-2 text-yellow-500 font-bold text-xs uppercase tracking-tight">
+                      <div className="w-3.5 h-3.5 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin"></div>
+                      <span>Searching LeetCode...</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Integrated LeetCode Style Recommendations */}
+              <AnimatePresence>
+                {showRecommendations && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="p-5 bg-[#1e1e1e] border-t border-white/10 flex flex-col gap-4 overflow-hidden"
+                  >
+                    <div className="text-sm font-semibold text-white flex items-center gap-2">
+                      <img src="/leetcode-logo.png" alt="LeetCode Logo" className="w-5 h-5 object-contain" />
+                      Recommended LeetCode Practice
+                      <span className="text-xs text-gray-500 font-normal ml-2">
+                        (Based on: <span className="text-gray-300">Binary Search</span>)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                      {/* EASY */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-[11px] font-black text-emerald-500 uppercase tracking-widest pl-1 mb-1 opacity-80">Easy</h3>
+                        {recommendationData.easy.map(prob => (
+                          <div key={prob.frontendQuestionId} className="group flex flex-col border border-emerald-500/20 bg-white/0 hover:bg-emerald-500/5 p-3 rounded-lg border-dashed transition-all cursor-default">
+                            <span className="font-bold text-emerald-400 mb-1 leading-tight text-xs">{prob.frontendQuestionId}. {prob.title}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] text-gray-500 font-mono">{prob.acRate}% Acceptance</span>
+                              <div className="text-[9px] border border-emerald-500/30 rounded px-1.5 py-0.5 text-emerald-500/60 uppercase font-black">Tags</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* MEDIUM */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-[11px] font-black text-orange-500 uppercase tracking-widest pl-1 mb-1 opacity-80">Medium</h3>
+                        {recommendationData.medium.map(prob => (
+                          <div key={prob.frontendQuestionId} className="group flex flex-col border border-orange-500/20 bg-white/0 hover:bg-orange-500/5 p-3 rounded-lg border-dashed transition-all cursor-default">
+                            <span className="font-bold text-orange-400 mb-1 leading-tight text-xs">{prob.frontendQuestionId}. {prob.title}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] text-gray-500 font-mono">{prob.acRate}% Acceptance</span>
+                              <div className="text-[9px] border border-orange-500/30 rounded px-1.5 py-0.5 text-orange-500/60 uppercase font-black">Tags</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* HARD */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-[11px] font-black text-rose-500 uppercase tracking-widest pl-1 mb-1 opacity-80">Hard</h3>
+                        {recommendationData.hard.map(prob => (
+                          <div key={prob.frontendQuestionId} className="group flex flex-col border border-rose-500/20 bg-white/0 hover:bg-rose-500/5 p-3 rounded-lg border-dashed transition-all cursor-default">
+                            <span className="font-bold text-rose-400 mb-1 leading-tight text-xs">{prob.frontendQuestionId}. {prob.title}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] text-gray-500 font-mono">{prob.acRate}% Acceptance</span>
+                              <div className="text-[9px] border border-rose-500/30 rounded px-1.5 py-0.5 text-rose-500/60 uppercase font-black">Tags</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Login Modal */}
       {
