@@ -8,7 +8,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import SnippetModule from '../components/Modules/SnippetModule';
 import CompilerInterface from '../components/Compiler/CompilerInterface';
 import useCompilerStore from '../store/compilerStore';
-import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2, Pen, Eraser, Square, Circle, Type, Image, MousePointer2 } from 'lucide-react';
+import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2, Pen, Eraser, Square, Circle, Type, Image, MousePointer2, Send, Folder, FileText, Settings, Bot, Bold, Italic, Underline, Strikethrough, Quote } from 'lucide-react';
 
 const DottedBackground = () => {
   const canvasRef = useRef(null);
@@ -304,6 +304,51 @@ public class BinarySearchExample {
 }`;
   const fullCompilerInput = `Enter the target element: 10`;
 
+  // --- Chatbot Demo Logic ---
+  const [demoChatInput, setDemoChatInput] = useState('');
+  const [demoChatMessages, setDemoChatMessages] = useState([]);
+  const [demoChatIsThinking, setDemoChatIsThinking] = useState(false);
+  const chatbotSectionRef = useRef(null);
+  const isChatbotInView = useInView(chatbotSectionRef, { margin: "-20% 0% -20% 0%", once: true });
+
+  // --- Text Module Demo Logic ---
+  const [textMenuBold, setTextMenuBold] = useState(false);
+  const [textMenuItalic, setTextMenuItalic] = useState(false);
+  const [textMenuUnderline, setTextMenuUnderline] = useState(false);
+  const [textMenuStrike, setTextMenuStrike] = useState(false);
+  const [textMenuQuote, setTextMenuQuote] = useState(false);
+
+  useEffect(() => {
+    if (!isChatbotInView) return;
+
+    let currentIndex = 0;
+    const targetText = "Give a simple code for Bubble sort in java";
+
+    const typeInterval = setInterval(() => {
+      if (currentIndex <= targetText.length) {
+        setDemoChatInput(targetText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setTimeout(() => {
+          setDemoChatInput('');
+          setDemoChatMessages([{ role: 'user', content: targetText }]);
+          setDemoChatIsThinking(true);
+
+          setTimeout(() => {
+            setDemoChatIsThinking(false);
+            setDemoChatMessages([
+              { role: 'user', content: targetText },
+              { role: 'assistant' }
+            ]);
+          }, 2000);
+        }, 500);
+      }
+    }, 50);
+
+    return () => clearInterval(typeInterval);
+  }, [isChatbotInView]);
+
   useEffect(() => {
     if (!isCompilerInView) return;
 
@@ -378,8 +423,9 @@ public class BinarySearchExample {
       container.addEventListener('click', handleTabClick, true); // Capture phase to catch clicks early
     }
 
+    let typeCode;
     const startTypingSequence = () => {
-      const typeCode = setInterval(() => {
+      typeCode = setInterval(() => {
         if (codeIndex < fullCompilerCode.length) {
           setCompilerCode(fullCompilerCode.substring(0, codeIndex + 3));
           codeIndex += 3;
@@ -447,7 +493,7 @@ public class BinarySearchExample {
         container.removeEventListener('click', handleTabClick, true);
       }
     };
-  }, [isCompilerInView, setCompilerCode]);
+  }, [isCompilerInView, setCompilerCode, fullCompilerCode, fullCompilerInput]);
 
   // Refined: Static UI Injection to avoid flicker
   useEffect(() => {
@@ -850,7 +896,7 @@ public class BinarySearchExample {
           >
             <div className="mb-10">
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 font-sans tracking-tight">
-                Snippet module
+                Smart Snippet
               </h2>
               <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
             </div>
@@ -1344,6 +1390,222 @@ public class BinarySearchExample {
             </div>
           </motion.div>
 
+        </div>
+      </section>
+
+      {/* "We Also Provide" Section */}
+      <section className="w-full max-w-7xl mx-auto px-6 py-20 relative z-10" ref={chatbotSectionRef}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 font-sans tracking-tight">
+            We Also Provide
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
+        </motion.div>
+
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          {/* Left Column: Chatbot Demo */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-1/2 relative min-h-[450px] lg:min-h-0"
+          >
+            <div className="floating-nav rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden bg-[#1e1e1e] flex flex-col w-full h-full lg:absolute lg:inset-0">
+              {/* Chatbot Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#333] bg-[#252526]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600/20 rounded-xl border border-blue-500/30">
+                    <Bot className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm tracking-tight">AI Assistant</h3>
+                    <p className="text-[10px] text-gray-400">Always ready to help</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                {demoChatMessages.length === 0 && !demoChatIsThinking ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center select-none pb-10 opacity-50">
+                    <div className="font-bold text-gray-200 text-lg mb-2">Hi User, how can I assist you?</div>
+                  </div>
+                ) : (
+                  <>
+                    {demoChatMessages.map((msg, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={msg.role === 'user' ? { opacity: 0, y: 50 } : { opacity: 0 }}
+                        animate={msg.role === 'user' ? { opacity: 1, y: 0 } : { opacity: 1 }}
+                        transition={{ duration: msg.role === 'user' ? 1 : 0.5, ease: "easeOut" }}
+                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-5 py-3 font-light text-sm leading-relaxed shadow-md ${msg.role === 'user'
+                            ? 'bg-blue-600 text-white rounded-br-sm'
+                            : 'bg-[#252526] text-gray-200 rounded-bl-sm border border-[#333]'
+                            }`}
+                        >
+                          {msg.role === 'assistant' ? (
+                            <div>
+                              <p className="mb-2">Here is a simple implementation of Bubble Sort in Java:</p>
+                              <div className="bg-[#1e1e1e] rounded-lg overflow-hidden mt-3 border border-[#333]">
+                                <div className="bg-[#2c2c2d] px-3 py-1.5 border-b border-[#333] text-[10px] text-gray-400 uppercase tracking-wider font-semibold">java</div>
+                                <pre className="p-4 text-[11px] text-gray-300 font-mono overflow-x-auto leading-relaxed">
+                                  <span className="text-[#569cd6]">public class</span> <span className="text-[#4ec9b0]">BubbleSort</span> {'{\n'}
+                                  {'    '}<span className="text-[#569cd6]">public static void</span> <span className="text-[#dcdcaa]">bubbleSort</span>(<span className="text-[#4ec9b0]">int</span>[] arr) {'{\n'}
+                                  {'        '}<span className="text-[#4ec9b0]">int</span> n = arr.length;{'\n'}
+                                  {'        '}<span className="text-[#c586c0]">for</span> (<span className="text-[#4ec9b0]">int</span> i = <span className="text-[#b5cea8]">0</span>; i {'<'} n - <span className="text-[#b5cea8]">1</span>; i++) {'{\n'}
+                                  {'            '}<span className="text-[#c586c0]">for</span> (<span className="text-[#4ec9b0]">int</span> j = <span className="text-[#b5cea8]">0</span>; j {'<'} n - i - <span className="text-[#b5cea8]">1</span>; j++) {'{\n'}
+                                  {'                '}<span className="text-[#c586c0]">if</span> (arr[j] {'>'} arr[j + <span className="text-[#b5cea8]">1</span>]) {'{\n'}
+                                  {'                    '}<span className="text-[#4ec9b0]">int</span> temp = arr[j];{'\n'}
+                                  {'                    '}arr[j] = arr[j + <span className="text-[#b5cea8]">1</span>];{'\n'}
+                                  {'                    '}arr[j + <span className="text-[#b5cea8]">1</span>] = temp;{'\n'}
+                                  {'                }\n            }\n        }\n    }\n}'}
+                                </pre>
+                              </div>
+                            </div>
+                          ) : (
+                            <p>{msg.content}</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                    {demoChatIsThinking && (
+                      <div className="flex items-start">
+                        <div className="max-w-[85%] rounded-2xl px-5 py-3 font-light text-sm leading-relaxed shadow-md bg-[#252526] text-gray-400 rounded-bl-sm border border-[#333] flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-4 border-t border-[#333] bg-[#1e1e1e]">
+                <div className="relative flex items-center gap-2 bg-[#1a1a1a] rounded-2xl shadow-inner border border-[#333] p-1.5">
+                  <input
+                    type="text"
+                    value={demoChatInput}
+                    readOnly
+                    placeholder="Ask anything..."
+                    className="flex-1 bg-transparent text-white px-4 py-2 focus:outline-none transition-all placeholder-gray-600 text-sm font-light"
+                  />
+                  <div className={`p-2.5 rounded-xl transition-colors ${demoChatInput ? 'bg-blue-600 text-white' : 'bg-[#2a2a2a] text-gray-500'}`}>
+                    <Send size={16} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Column: Other Features */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut", staggerChildren: 0.2 }}
+            className="w-full lg:w-1/2 flex flex-col gap-8"
+          >
+            {/* Text Module Extensibility */}
+            <div className="floating-nav p-8 rounded-[2rem] border border-white/10 shadow-2xl relative overflow-hidden group bg-[#0a0a0a]">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="relative z-10 flex flex-col h-full justify-center">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/30">
+                    <FileText className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Text Customization</h3>
+                </div>
+
+                {/* Interactive Demo UI */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8 mt-0">
+                  {/* Left Descriptive Text */}
+                  <div className="flex-1 text-center md:text-left">
+                    <p className="text-2xl font-light text-gray-300 leading-snug">
+                      Edit your text <span className="text-purple-400 font-semibold italic border-b-2 border-purple-500/50">the way you like.</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-4 leading-relaxed">
+                      Experience true flexibility. Switch themes, structure your documentation just the way you love it.
+                    </p>
+                  </div>
+
+                  {/* Right Interactive Area */}
+                  <div className="flex-[1.5] w-full flex flex-col items-center">
+                    {/* Replica Context Menu */}
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="flex items-center bg-[#252526] border border-[#333] shadow-lg rounded-md overflow-hidden z-20 px-2 py-1 space-x-1">
+                        {[
+                          { key: 'bold', state: textMenuBold, setter: setTextMenuBold, Icon: Bold, title: 'Bold' },
+                          { key: 'italic', state: textMenuItalic, setter: setTextMenuItalic, Icon: Italic, title: 'Italic' },
+                          { key: 'underline', state: textMenuUnderline, setter: setTextMenuUnderline, Icon: Underline, title: 'Underline' },
+                          { key: 'strike', state: textMenuStrike, setter: setTextMenuStrike, Icon: Strikethrough, title: 'Strikethrough' },
+                          { key: 'quote', state: textMenuQuote, setter: setTextMenuQuote, Icon: Quote, title: 'Quote' },
+                        ].map(({ key, state, setter, Icon, title }) => (
+                          <button
+                            key={key}
+                            onClick={() => setter(!state)}
+                            className={`p-1.5 rounded transition-all ${state
+                              ? 'bg-blue-500/50 border border-blue-500 text-white shadow-[0_0_8px_rgba(59,130,246,0.5)]'
+                              : 'border border-transparent text-gray-400 hover:bg-white/10 hover:text-white'
+                              }`}
+                            title={title}
+                          >
+                            <Icon size={16} strokeWidth={state ? 3 : 2} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Text Preview Display */}
+                    <div className={`p-4 transition-all duration-300 w-full max-w-sm ${textMenuQuote ? 'border-l-4 border-blue-500 bg-white/5 py-3 rounded-r-md' : ''}`}>
+                      <p
+                        className={`text-2xl text-center tracking-wide ${textMenuBold ? 'font-bold' : 'font-normal'} ${textMenuItalic ? 'italic' : ''}`}
+                        style={{
+                          textDecoration: [
+                            textMenuUnderline ? 'underline' : '',
+                            textMenuStrike ? 'line-through' : ''
+                          ].filter(Boolean).join(' ') || 'none',
+                          color: textMenuQuote ? '#d1d5db' : '#ffffff'
+                        }}
+                      >
+                        Poket Snippet
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Folder Organization */}
+            <div className="floating-nav p-8 rounded-[2rem] border border-white/10 shadow-2xl relative overflow-hidden group bg-[#0a0a0a]">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="relative z-10 flex flex-col h-full justify-center">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-emerald-500/20 rounded-2xl border border-emerald-500/30">
+                    <Folder className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">File & Folder Organization</h3>
+                </div>
+                <p className="text-gray-400 leading-relaxed mb-6">
+                  Never lose a snippet again. Build an hierarchy with nested folders, and global search makes easy to search any file.
+                </p>
+                <div className="flex gap-2">
+                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] text-gray-300 font-medium">Nested Folders</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
