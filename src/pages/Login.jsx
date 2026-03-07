@@ -326,6 +326,7 @@ public class BinarySearchExample {
           span.style.color = '#E76F00';
         }
       }
+
       setTimeout(() => {
         startTypingSequence();
       }, 500);
@@ -447,6 +448,41 @@ public class BinarySearchExample {
       }
     };
   }, [isCompilerInView, setCompilerCode]);
+
+  // Refined: Static UI Injection to avoid flicker
+  useEffect(() => {
+    const injectStaticButtons = () => {
+      const actionsDiv = compilerContainerRef.current?.querySelector('.flex.items-center.gap-3.relative');
+      if (actionsDiv && !actionsDiv.querySelector('[data-auto-complete-demo]')) {
+        const convertBtn = Array.from(actionsDiv.querySelectorAll('button'))
+          .find(b => b.textContent.includes('Convert'));
+
+        if (convertBtn) {
+          const autoBtn = document.createElement('div');
+          autoBtn.setAttribute('data-auto-complete-demo', 'true');
+          autoBtn.innerHTML = `
+            <div class="flex items-center gap-2 px-4 py-1.5 bg-[#1e1e1e] border-2 border-yellow-500/30 text-yellow-500 rounded-full text-xs font-medium transition-all shadow-sm opacity-100 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+              Auto Complete
+            </div>
+          `;
+          actionsDiv.insertBefore(autoBtn, convertBtn);
+        }
+      }
+    };
+
+    // Use MutationObserver to detect when the compiler toolbar is rendered
+    const observer = new MutationObserver(() => {
+      injectStaticButtons();
+    });
+
+    if (compilerContainerRef.current) {
+      observer.observe(compilerContainerRef.current, { childList: true, subtree: true });
+      injectStaticButtons(); // Initial attempt
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleSnippetPreviewUpdate = (updates) => {
     let newUpdates = { ...updates };
@@ -1054,6 +1090,11 @@ public class BinarySearchExample {
 
             .compiler-preview .monaco-editor {
                 border-radius: 0 !important;
+            }
+
+            /* Instantly hide the Expand/More button to avoid flicker */
+            .compiler-preview .flex.items-center.gap-3.relative button:first-child {
+                display: none !important;
             }
           `}</style>
 
