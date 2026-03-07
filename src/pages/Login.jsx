@@ -8,7 +8,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import SnippetModule from '../components/Modules/SnippetModule';
 import CompilerInterface from '../components/Compiler/CompilerInterface';
 import useCompilerStore from '../store/compilerStore';
-import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2 } from 'lucide-react';
+import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2, Pen, Eraser, Square, Circle, Type, Image, MousePointer2 } from 'lucide-react';
 
 const DottedBackground = () => {
   const canvasRef = useRef(null);
@@ -1107,7 +1107,7 @@ public class BinarySearchExample {
             className="w-full lg:w-[25%] flex flex-col"
           >
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-white mb-2 font-sans tracking-tight">
+              <h2 className="text-4xl font-bold text-white mb-2 font-sans tracking-tight">
                 Built-in Compiler
               </h2>
               <div className="w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
@@ -1184,6 +1184,163 @@ public class BinarySearchExample {
               <p className="text-gray-400 leading-relaxed text-xs">
                 AI-powered <span className="text-purple-400 font-medium">auto-complete and bug fixing</span>. Analyze your code in real-time to detect errors and suggest modern optimizations.
               </p>
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* Poket Canvas Feature Section */}
+      <section className="w-full max-w-7xl mx-auto px-6 py-20 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+
+          {/* Left Side: Information Box */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[32%] flex flex-col items-start"
+          >
+            <div className="mb-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 font-sans tracking-tight">
+                Poket Canvas
+              </h2>
+              <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+            </div>
+
+            <div className="floating-nav p-8 rounded-3xl w-full border border-white/10 shadow-2xl relative overflow-hidden group bg-[#0a0a0a]">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              <div className="relative z-10">
+                <h3 className="text-2xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Pen className="w-5 h-5 text-blue-400" />
+                  </div>
+                  The Infinite Board
+                </h3>
+
+                <div className="space-y-6 text-gray-300">
+                  <div className="flex gap-4">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                    <p className="leading-relaxed">
+                      <span className="text-white font-bold">Ultimate Canvas.</span> Sketch architectures, map out data flows, and ideate visually on an infinite handwritten playground. Add images, embed code blocks, draw shapes, and organize elements however you want.
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                    <p className="leading-relaxed">
+                      <span className="text-white font-bold">Real-time Cloud Sync.</span> Your brilliant ideas are never lost. Every stroke is instantly saved to the cloud, accessible instantly from anywhere, anytime.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Decorative accent */}
+                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">NOTEBOOK V2.0</span>
+                  <div className="flex gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Side: Mock Canvas UI */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="w-full lg:w-[68%] flex flex-col items-center"
+          >
+            <div className="w-full h-[540px] bg-[#1a1a1a] rounded-[2rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+              {/* Canvas Custom Grid Background */}
+              <div className="absolute inset-0 opacity-[0.1]" style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
+                `,
+                backgroundSize: '20px 20px'
+              }}></div>
+
+              {/* Mock Toolbar */}
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center bg-[#252526]/90 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl z-20">
+                <div className="flex items-center gap-1">
+                  <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl shadow-lg border border-blue-500/30">
+                    <Pen size={18} />
+                  </div>
+                  <div className="p-2.5 text-gray-400 rounded-xl">
+                    <Eraser size={18} />
+                  </div>
+                </div>
+
+                <div className="w-px h-6 bg-white/10 mx-2"></div>
+
+                <div className="flex items-center gap-1">
+                  <div className="p-2.5 text-gray-400 rounded-xl">
+                    <Square size={18} />
+                  </div>
+                  <div className="p-2.5 text-gray-400 rounded-xl">
+                    <Circle size={18} />
+                  </div>
+                  <div className="p-2.5 text-gray-400 rounded-xl">
+                    <Type size={18} />
+                  </div>
+                  <div className="p-2.5 text-gray-400 rounded-xl">
+                    <Image size={18} />
+                  </div>
+                </div>
+
+                <div className="w-px h-6 bg-white/10 mx-2"></div>
+
+                <div className="p-2.5 text-gray-400 rounded-xl">
+                  <MousePointer2 size={18} />
+                </div>
+              </div>
+
+              {/* Mock Drawing Elements (Static & Animated) */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none">
+                {/* Drawing path simulating a pen stroke (Above Line - starts first) */}
+                <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
+                  <motion.path
+                    d="M 150 200 Q 250 150 400 250 T 550 230 T 650 300"
+                    fill="transparent"
+                    stroke="#f59e0b"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    whileInView={{ pathLength: 1, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
+                  />
+                </svg>
+
+                {/* Connection Line (Below Line - starts after the first completes) */}
+                <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
+                  <motion.path
+                    d="M 200 300 C 300 300, 400 400, 500 400"
+                    fill="transparent"
+                    stroke="#a855f7"
+                    strokeWidth="3"
+                    strokeDasharray="8 8"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    whileInView={{ pathLength: 1, opacity: 0.8 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, ease: "easeInOut", delay: 2.5 }}
+                  />
+                </svg>
+              </div>
+
+              {/* Info Pill */}
+              <div className="absolute bottom-6 right-6 flex items-center gap-3">
+                <div className="px-4 py-2 bg-purple-500/10 backdrop-blur-md border border-purple-500/20 rounded-full text-[11px] font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 shadow-lg">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
+                  Infinite Canvas
+                </div>
+              </div>
             </div>
           </motion.div>
 
