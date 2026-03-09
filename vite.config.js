@@ -5,6 +5,17 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
 
+  // Monaco Editor uses AMD (require.js) internally — pre-bundling as ESM prevents
+  // the "Can only have one anonymous define call" conflict when multiple lazy chunks
+  // (Login's SnippetModule + the main app) both import Monaco simultaneously.
+  optimizeDeps: {
+    include: [
+      'framer-motion',
+      '@react-oauth/google',
+      '@monaco-editor/react',
+      'monaco-editor',
+    ],
+  },
   define: {
     "process.env.IS_PREACT": JSON.stringify("false"),
   },

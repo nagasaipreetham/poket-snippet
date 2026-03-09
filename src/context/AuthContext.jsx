@@ -13,14 +13,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from local storage on mount
+  // Decode JWT payload and check if it is expired (no extra library needed)
+  const isTokenExpired = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // exp is in seconds, Date.now() is in ms
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true; // Treat malformed token as expired
+    }
+  };
+
+  // Load user from local storage on mount — auto-logout if token is expired
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser && parsedUser.accessToken) {
-          setUser(parsedUser);
+          if (isTokenExpired(parsedUser.accessToken)) {
+            // Token has expired — clear storage and treat as logged out
+            localStorage.removeItem('user');
+            setUser(null);
+          } else {
+            setUser(parsedUser);
+          }
         } else {
           // Invalid user data
           localStorage.removeItem('user');

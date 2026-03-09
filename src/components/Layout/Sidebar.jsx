@@ -154,7 +154,7 @@ const Sidebar = () => {
           {showUserMenu && (
             <div className="absolute top-full left-2 right-2 mt-1 bg-[#252525] border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
               <Link
-                to="/settings"
+                to="/home/settings"
                 onClick={() => setShowUserMenu(false)}
                 className="w-full flex items-center space-x-3 px-4 py-3 text-white hover:bg-white/5 hover:text-accent transition-colors text-left"
               >
@@ -177,17 +177,17 @@ const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Home */}
-          <Link to="/" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+          <Link to="/home" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
             <Home size={18} />
             <span>Home</span>
           </Link>
-          <Link to="/favorites" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+          <Link to="/home/favorites" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
             <Heart size={18} />
             <span>Favorites</span>
           </Link>
 
           {/* Pocket Canvas Trigger */}
-          <Link to="/pocket-canvas" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
+          <Link to="/home/pocket-canvas" className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text-muted hover:text-white transition-colors">
             <Palette size={18} />
             <span>Pocket Canvas</span>
           </Link>
@@ -202,7 +202,7 @@ const Sidebar = () => {
             <div className="mt-4">
               <div className="px-3 flex items-center justify-between mb-1">
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest">Miscellaneous</h3>
-                <Link to="/miscellaneous" className="text-[10px] text-accent hover:underline">View All</Link>
+                <Link to="/home/miscellaneous" className="text-[10px] text-accent hover:underline">View All</Link>
               </div>
 
               <div className="space-y-0.5">
@@ -215,7 +215,7 @@ const Sidebar = () => {
                   <button
                     onClick={() => {
                       if (miscLimit >= 10) {
-                        navigate('/miscellaneous');
+                        navigate('/home/miscellaneous');
                       } else {
                         setMiscLimit(10);
                       }
@@ -354,7 +354,7 @@ const Sidebar = () => {
                         onClick={() => {
                           openCanvasWithId(canvas._id);
                           setIsSearchOpen(false);
-                          navigate('/pocket-canvas');
+                          navigate('/home/pocket-canvas');
                         }}
                         className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"
                       >

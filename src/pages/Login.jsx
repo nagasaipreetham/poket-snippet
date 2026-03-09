@@ -635,7 +635,7 @@ public class BinarySearchExample {
         });
 
         setIsLoginModalOpen(false);
-        navigate('/');
+        navigate('/home');
       } catch (error) {
         console.error('Login Error:', error);
 

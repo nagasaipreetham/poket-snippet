@@ -30,7 +30,7 @@ const SidebarItem = ({ item, type, level = 0 }) => {
   const paddingLeft = `${level * 12 + 12}px`;
 
   // Active State Logic
-  const isActive = location.pathname === (type === 'file' ? `/snippet/${item.id}` : `/folder/${item.id}`);
+  const isActive = location.pathname === (type === 'file' ? `/home/snippet/${item.id}` : `/home/folder/${item.id}`);
 
   // Handlers
   const handleContextMenu = (e) => {
@@ -71,7 +71,7 @@ const SidebarItem = ({ item, type, level = 0 }) => {
   };
 
   const handleFolderClick = (e) => {
-    navigate(`/folder/${item.id}`);
+    navigate(`/home/folder/${item.id}`);
     if (isActive) {
       setIsOpen(!isOpen);
     } else {
@@ -134,7 +134,7 @@ const SidebarItem = ({ item, type, level = 0 }) => {
         />
 
         <Link
-          to={`/snippet/${item.id}`}
+          to={`/home/snippet/${item.id}`}
           className="block group"
         >
           <div
