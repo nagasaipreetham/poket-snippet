@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-const SnippetModule = lazy(() => import('../components/Modules/SnippetModule'));
-const CompilerInterface = lazy(() => import('../components/Compiler/CompilerInterface'));
+import SnippetModule from '../components/Modules/SnippetModule';
+import CompilerInterface from '../components/Compiler/CompilerInterface';
 import useCompilerStore from '../store/compilerStore';
 import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2, Pen, Eraser, Square, Circle, Type, Image, MousePointer2, Send, Folder, FileText, Settings, Bot, Bold, Italic, Underline, Strikethrough, Quote } from 'lucide-react';
 
@@ -977,16 +977,12 @@ public class BinarySearchExample {
               onClickCapture={handleSnippetPreviewClick}
               onKeyDownCapture={handleSnippetPreviewKeyDown}
             >
-              {isSnippetInView && (
-                <Suspense fallback={<div className="h-[400px] w-full bg-[#1e1e1e]"></div>}>
-                  <SnippetModule
-                    module={mockSnippet}
-                    snippetId="preview-id"
-                    onUpdate={handleSnippetPreviewUpdate}
-                    isDragging={false}
-                  />
-                </Suspense>
-              )}
+              <SnippetModule
+                module={mockSnippet}
+                snippetId="preview-id"
+                onUpdate={handleSnippetPreviewUpdate}
+                isDragging={false}
+              />
 
               {/* Integrated Loading Overlay - Replaces/Overlays the bottom section */}
               <AnimatePresence>
@@ -1091,11 +1087,7 @@ public class BinarySearchExample {
               ref={compilerContainerRef}
               className="compiler-preview w-full h-[546px] shadow-2xl shadow-blue-900/10 rounded-xl border border-white/10 overflow-hidden relative"
             >
-              {isCompilerInView && (
-                <Suspense fallback={<div className="h-[546px] w-full bg-[#1e1e1e]"></div>}>
-                  <CompilerInterface />
-                </Suspense>
-              )}
+              <CompilerInterface />
             </div>
           </motion.div>
 
