@@ -76,6 +76,7 @@ const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark
         value={value}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
+        loading={""}
         theme="vs-dark" // Will be overridden by onMount
         options={{
           minimap: { enabled: false },

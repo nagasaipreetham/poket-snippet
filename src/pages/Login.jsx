@@ -1,12 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import SnippetModule from '../components/Modules/SnippetModule';
-import CompilerInterface from '../components/Compiler/CompilerInterface';
+const SnippetModule = lazy(() => import('../components/Modules/SnippetModule'));
+const CompilerInterface = lazy(() => import('../components/Compiler/CompilerInterface'));
 import useCompilerStore from '../store/compilerStore';
 import { Play, Terminal, ChevronDown, RefreshCw, Sparkles, Wand2, Pen, Eraser, Square, Circle, Type, Image, MousePointer2, Send, Folder, FileText, Settings, Bot, Bold, Italic, Underline, Strikethrough, Quote } from 'lucide-react';
 
@@ -21,7 +20,7 @@ const DottedBackground = () => {
     let dots = [];
     let ripples = [];
     let idleTimer;
-    const spacing = 35;
+    const spacing = 50;
     const mouse = { x: null, y: null, radius: 180, isIdle: false };
 
     const resize = () => {
@@ -38,7 +37,7 @@ const DottedBackground = () => {
         this.originY = y;
         this.vx = 0;
         this.vy = 0;
-        this.size = 2.5;
+        this.size = 3;
         this.friction = 0.92; // Higher value = more fluid movement
         this.springStrength = 0.02; // Lower value = less "rubbery" snapping
       }
@@ -203,9 +202,9 @@ const Login = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHoveringNav, setIsHoveringNav] = useState(false);
   const snippetSectionRef = useRef(null);
-  const isSnippetInView = useInView(snippetSectionRef, { margin: "-50% 0% -20% 0%", once: true });
+  const isSnippetInView = useInView(snippetSectionRef, { margin: "-30% 0px", once: true });
   const compilerSectionRef = useRef(null);
-  const isCompilerInView = useInView(compilerSectionRef, { margin: "-50% 0% -20% 0%", once: true });
+  const isCompilerInView = useInView(compilerSectionRef, { margin: "-30% 0px", once: true });
   const compilerContainerRef = useRef(null);
   const { setCode: setCompilerCode } = useCompilerStore();
 
@@ -228,19 +227,19 @@ const Login = () => {
   const recommendationData = {
     tagsAssigned: ["Binary Search"],
     easy: [
-      { acRate: "48.6", difficulty: "Easy", frontendQuestionId: "35", title: "Search Insert Position", titleSlug: "search-insert-position", topicTags: "['Array', 'Binary Search']" },
-      { acRate: "40.1", difficulty: "Easy", frontendQuestionId: "69", title: "Sqrt(x)", titleSlug: "sqrtx", topicTags: "['Math', 'Binary Search']" },
-      { acRate: "69.3", difficulty: "Easy", frontendQuestionId: "222", title: "Count Complete Tree Nodes", titleSlug: "count-complete-tree-nodes", topicTags: "['Binary Search', 'Bit Manipulation', 'Tree', 'Binary Tree']" }
+      { acRate: "48.6", difficulty: "Easy", frontendQuestionId: "35", title: "Search Insert Position" },
+      { acRate: "40.1", difficulty: "Easy", frontendQuestionId: "69", title: "Sqrt(x)", titleSlug: "sqrtx" },
+      { acRate: "69.3", difficulty: "Easy", frontendQuestionId: "222", title: "Count Complete Tree Nodes" }
     ],
     medium: [
-      { acRate: "42.5", difficulty: "Medium", frontendQuestionId: "33", title: "Search in Rotated Sorted Array", titleSlug: "search-in-rotated-sorted-array", topicTags: "['Array', 'Binary Search']" },
-      { acRate: "46.4", difficulty: "Medium", frontendQuestionId: "34", title: "Find First and Last Position of Element in Sorted Array", titleSlug: "find-first-and-last-position-of-element-in-sorted-array", topicTags: "['Array', 'Binary Search']" },
-      { acRate: "51.9", difficulty: "Medium", frontendQuestionId: "74", title: "Search a 2D Matrix", titleSlug: "search-a-2d-matrix", topicTags: "['Array', 'Binary Search', 'Matrix']" }
+      { acRate: "42.5", difficulty: "Medium", frontendQuestionId: "33", title: "Search in Rotated Sorted Array" },
+      { acRate: "46.4", difficulty: "Medium", frontendQuestionId: "34", title: "Find First and Last Position of Element in Sorted Array" },
+      { acRate: "51.9", difficulty: "Medium", frontendQuestionId: "74", title: "Search a 2D Matrix" }
     ],
     hard: [
-      { acRate: "43.2", difficulty: "Hard", frontendQuestionId: "4", title: "Median of Two Sorted Arrays", titleSlug: "median-of-two-sorted-arrays", topicTags: "['Array', 'Binary Search', 'Divide and Conquer']" },
-      { acRate: "44.0", difficulty: "Hard", frontendQuestionId: "154", title: "Find Minimum in Rotated Sorted Array II", titleSlug: "find-minimum-in-rotated-sorted-array-ii", topicTags: "['Array', 'Binary Search']" },
-      { acRate: "59.5", difficulty: "Hard", frontendQuestionId: "302", title: "Smallest Rectangle Enclosing Black Pixels", titleSlug: "smallest-rectangle-enclosing-black-pixels", topicTags: "['Array', 'Binary Search', 'Depth-First Search', 'Breadth-First Search', 'Matrix']" },
+      { acRate: "43.2", difficulty: "Hard", frontendQuestionId: "4", title: "Median of Two Sorted Arrays" },
+      { acRate: "44.0", difficulty: "Hard", frontendQuestionId: "154", title: "Find Minimum in Rotated Sorted Array II" },
+      { acRate: "59.5", difficulty: "Hard", frontendQuestionId: "302", title: "Smallest Rectangle Enclosing Black Pixels" }
     ]
   };
 
@@ -546,10 +545,6 @@ public class BinarySearchExample {
     }
 
     if ('customMetadata' in newUpdates && newUpdates.customMetadata.length > 1 && newUpdates.customMetadata.length > mockSnippet.customMetadata.length) {
-      toast('Maximum of 1 custom field allowed in preview.', {
-        icon: '🔒',
-        style: { borderRadius: '10px', background: '#333', color: '#fff' }
-      });
       return;
     }
     setMockSnippet(prev => ({ ...prev, ...newUpdates }));
@@ -562,14 +557,6 @@ public class BinarySearchExample {
       if (text.includes('run') || text.includes('ask ai') || text.includes('find similar')) {
         e.stopPropagation();
         e.preventDefault();
-        toast('This feature is disabled during preview.', {
-          icon: '🔒',
-          style: {
-            borderRadius: '10px',
-            background: '#333',
-            color: '#fff',
-          },
-        });
       }
     }
 
@@ -581,9 +568,6 @@ public class BinarySearchExample {
         e.preventDefault();
         e.stopPropagation();
         e.target.blur();
-        toast('Editing this text is disabled in preview.', {
-          icon: '🔒', id: 'meta-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
-        });
       }
     }
   };
@@ -595,9 +579,6 @@ public class BinarySearchExample {
       if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         e.stopPropagation();
-        toast('Editing is disabled in preview.', {
-          icon: '🔒', id: 'editor-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
-        });
       }
     }
 
@@ -610,9 +591,6 @@ public class BinarySearchExample {
         if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
           e.stopPropagation();
-          toast('Editing this text is disabled in preview.', {
-            icon: '🔒', id: 'meta-lock', style: { borderRadius: '10px', background: '#333', color: '#fff' }
-          });
         }
       }
     }
@@ -656,7 +634,6 @@ public class BinarySearchExample {
           ...user, // This now includes the 5-day JWT accessToken from backend
         });
 
-        toast.success(`Welcome back, ${user.name}!`);
         setIsLoginModalOpen(false);
         navigate('/');
       } catch (error) {
@@ -669,7 +646,6 @@ public class BinarySearchExample {
           errorMessage = error.message;
         }
 
-        toast.error(errorMessage);
         setAuthUser(null);
       } finally {
         setLoading(false);
@@ -677,7 +653,6 @@ public class BinarySearchExample {
     },
     onError: (error) => {
       console.error('Login Failed:', error);
-      toast.error('Sign in failed. Please try again.');
       setLoading(false);
     }
   });
@@ -1002,12 +977,16 @@ public class BinarySearchExample {
               onClickCapture={handleSnippetPreviewClick}
               onKeyDownCapture={handleSnippetPreviewKeyDown}
             >
-              <SnippetModule
-                module={mockSnippet}
-                snippetId="preview-id"
-                onUpdate={handleSnippetPreviewUpdate}
-                isDragging={false}
-              />
+              {isSnippetInView && (
+                <Suspense fallback={<div className="h-[400px] w-full bg-[#1e1e1e]"></div>}>
+                  <SnippetModule
+                    module={mockSnippet}
+                    snippetId="preview-id"
+                    onUpdate={handleSnippetPreviewUpdate}
+                    isDragging={false}
+                  />
+                </Suspense>
+              )}
 
               {/* Integrated Loading Overlay - Replaces/Overlays the bottom section */}
               <AnimatePresence>
@@ -1052,7 +1031,7 @@ public class BinarySearchExample {
                             <span className="font-bold text-emerald-400 mb-1 leading-tight text-xs">{prob.frontendQuestionId}. {prob.title}</span>
                             <div className="flex items-center space-x-2">
                               <span className="text-[10px] text-gray-500 font-mono">{prob.acRate}% Acceptance</span>
-                              <div className="text-[9px] border border-emerald-500/30 rounded px-1.5 py-0.5 text-emerald-500/60 uppercase font-black">Tags</div>
+                              <div className="text-[9px] border border-emerald-500/30 rounded px-1.5 py-0.5 text-emerald-500/60 uppercase font-black">A</div>
                             </div>
                           </div>
                         ))}
@@ -1112,7 +1091,11 @@ public class BinarySearchExample {
               ref={compilerContainerRef}
               className="compiler-preview w-full h-[546px] shadow-2xl shadow-blue-900/10 rounded-xl border border-white/10 overflow-hidden relative"
             >
-              <CompilerInterface />
+              {isCompilerInView && (
+                <Suspense fallback={<div className="h-[546px] w-full bg-[#1e1e1e]"></div>}>
+                  <CompilerInterface />
+                </Suspense>
+              )}
             </div>
           </motion.div>
 
@@ -1598,7 +1581,7 @@ public class BinarySearchExample {
                   <h3 className="text-2xl font-bold text-white tracking-tight">File & Folder Organization</h3>
                 </div>
                 <p className="text-gray-400 leading-relaxed mb-6">
-                  Never lose a snippet again. Build an hierarchy with nested folders, and global search makes easy to search any file.
+                  Never lose a snippet again. Build an hierarchy with nested folders, and global search makes it easy for you to search any file.
                 </p>
                 <div className="flex gap-2">
                   <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] text-gray-300 font-medium">Nested Folders</span>

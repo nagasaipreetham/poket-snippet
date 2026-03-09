@@ -9,8 +9,9 @@ import Favorites from './pages/Favorites';
 import AllMiscellaneous from './pages/AllMiscellaneous';
 import Login from './pages/Login';
 import UserSettings from './pages/UserSettings';
-import PocketCanvas from './pages/PocketCanvas';
+const PocketCanvas = React.lazy(() => import('./pages/PocketCanvas'));
 import { FileSystemProvider } from './context/FileSystemContext';
+
 
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -42,7 +43,11 @@ function App() {
             <Route path="miscellaneous" element={<AllMiscellaneous />} />
             <Route path="snippet/:id" element={<SnippetDetail />} />
             <Route path="folder/:id" element={<FolderDetail />} />
-            <Route path="pocket-canvas" element={<PocketCanvas />} />
+            <Route path="pocket-canvas" element={
+              <React.Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading Canvas...</div>}>
+                <PocketCanvas />
+              </React.Suspense>
+            } />
             <Route path="settings" element={<UserSettings />} />
           </Route>
         </Routes>
