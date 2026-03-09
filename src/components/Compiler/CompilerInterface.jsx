@@ -1,6 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { Play, ChevronUp, ChevronDown, RefreshCw, Terminal, Check, Sparkles, MoreVertical } from 'lucide-react';
-import CodeEditor from '../Editor/CodeEditor';
+
+// Monaco (~4MB) — lazy-loaded so it only downloads when the compiler panel is opened,
+// not on home page load.
+const CodeEditor = lazy(() => import('../Editor/CodeEditor'));
+
 import { runCode } from '../../services/compilerService';
 import useCompilerStore from '../../store/compilerStore';
 import { GoogleGenAI } from "@google/genai";
@@ -422,13 +426,19 @@ const CompilerInterface = () => {
 
       {/* Editor Area */}
       <div className="flex-1 relative bg-[#1e1e1e] overflow-hidden">
-        <CodeEditor
-          language={language}
-          value={code}
-          onChange={handleEditorChange}
-          theme="vs-dark"
-          fontSize={editorFontSize}
-        />
+        <Suspense fallback={
+          <div className="h-full w-full flex items-center justify-center bg-[#191919]">
+            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+          </div>
+        }>
+          <CodeEditor
+            language={language}
+            value={code}
+            onChange={handleEditorChange}
+            theme="vs-dark"
+            fontSize={editorFontSize}
+          />
+        </Suspense>
       </div>
 
       {/* Bottom Panel (Input/Output) */}

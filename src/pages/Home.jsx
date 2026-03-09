@@ -27,7 +27,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayRecent.map((file) => (
               <Link
-                to={`/snippet/${file.id}`}
+                to={`/home/snippet/${file.id}`}
                 key={file.id}
                 className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border cursor-pointer group flex flex-col justify-between h-24"
               >
@@ -59,7 +59,7 @@ const Home = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {folders.map((folder) => (
-              <Link to={`/folder/${folder.id}`} key={folder.id} className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border flex items-center space-x-3 cursor-pointer group">
+              <Link to={`/home/folder/${folder.id}`} key={folder.id} className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border flex items-center space-x-3 cursor-pointer group">
                 <Folder className="text-text-muted group-hover:text-amber-400 transition-colors" size={20} />
                 <span className="font-medium text-text group-hover:text-white truncate">{folder.name}</span>
               </Link>

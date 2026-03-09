@@ -215,7 +215,7 @@ const UserSettings = () => {
       <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#191919] sticky top-0 z-50 shrink-0 shadow-sm">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className="text-text-muted hover:text-white transition-colors p-1 rounded hover:bg-white/5"
             title="Go Back"
           >

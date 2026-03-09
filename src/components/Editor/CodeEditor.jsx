@@ -1,11 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-
-// Use the already-bundled Monaco ESM instance instead of loading via AMD/CDN.
-// This is the key fix for "Can only have one anonymous define call per script file" —
-// Monaco's AMD loader won't try to re-register when chunks load simultaneously.
-loader.config({ monaco });
 
 const CodeEditor = ({ language = 'javascript', value, onChange, theme = 'vs-dark', fontSize = 14 }) => {
   const handleEditorChange = (value, event) => {

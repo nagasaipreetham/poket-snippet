@@ -5,15 +5,13 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
 
-  // Monaco Editor uses AMD (require.js) internally — pre-bundling as ESM prevents
-  // the "Can only have one anonymous define call" conflict when multiple lazy chunks
-  // (Login's SnippetModule + the main app) both import Monaco simultaneously.
+  // Pre-bundle framer-motion and @react-oauth/google as ESM to avoid AMD conflicts.
+  // monaco-editor and @monaco-editor/react are intentionally excluded — Monaco uses
+  // Web Workers that cannot be pre-bundled by Vite's dep optimizer.
   optimizeDeps: {
     include: [
       'framer-motion',
       '@react-oauth/google',
-      '@monaco-editor/react',
-      'monaco-editor',
     ],
   },
   define: {
