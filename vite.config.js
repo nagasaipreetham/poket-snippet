@@ -12,6 +12,9 @@ export default defineConfig({
     include: [
       'framer-motion',
       '@react-oauth/google',
+      'lucide-react',
+      'react-hot-toast',
+      'uuid'
     ],
   },
   define: {
