@@ -336,11 +336,16 @@ const Sidebar = () => {
                   <div className="mb-2">
                     <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Folders</h4>
                     {filteredFolders.map(folder => (
-                      <div key={folder.id} className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group">
+                      <Link
+                        to={`/home/folder/${folder.id}`}
+                        key={folder.id}
+                        onClick={() => setIsSearchOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"
+                      >
                         <Folder size={16} className="text-text-muted group-hover:text-amber-400" />
                         <span>{folder.name}</span>
                         <span className="text-xs text-text-muted ml-auto">Folder</span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -370,7 +375,7 @@ const Sidebar = () => {
                     <h4 className="px-3 py-2 text-xs font-bold text-text-muted uppercase tracking-widest">Files</h4>
                     {filteredFiles.map(file => (
                       <Link
-                        to={`/snippet/${file.id}`}
+                        to={`/home/snippet/${file.id}`}
                         key={file.id}
                         onClick={() => setIsSearchOpen(false)}
                         className="flex items-center space-x-3 px-3 py-2 rounded hover:bg-surface text-text hover:text-white cursor-pointer group"

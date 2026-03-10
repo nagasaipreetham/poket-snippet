@@ -99,7 +99,7 @@ const FolderDetail = () => {
             <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-thin">
               {subFolders.map(folder => (
                 <Link
-                  to={`/folder/${folder.id}`}
+                  to={`/home/folder/${folder.id}`}
                   key={folder.id}
                   className="min-w-[180px] h-32 bg-surface hover:bg-surface-hover rounded-xl p-4 border border-border flex flex-col justify-between transition-colors group"
                 >
@@ -127,7 +127,7 @@ const FolderDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {subFiles.map(file => (
                 <Link
-                  to={`/snippet/${file.id}`}
+                  to={`/home/snippet/${file.id}`}
                   key={file.id}
                   className="bg-surface hover:bg-surface-hover rounded-lg p-4 border border-border flex items-center space-x-3 transition-colors group"
                 >

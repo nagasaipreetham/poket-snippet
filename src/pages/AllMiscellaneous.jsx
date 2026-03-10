@@ -20,7 +20,7 @@ const AllMiscellaneous = () => {
         ) : (
           rootFiles.map((file) => (
             <Link
-              to={`/snippet/${file.id}`}
+              to={`/home/snippet/${file.id}`}
               key={file.id}
               className="bg-surface hover:bg-surface-hover transition-colors p-4 rounded-lg border border-border cursor-pointer group flex flex-col justify-between h-24"
             >
