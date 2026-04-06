@@ -39,8 +39,7 @@ export const LANGUAGE_MAPPING = {
   vbnet: 84
 };
 
-const JUDGE0_API_URL = 'http://localhost:2358';
-
+const JUDGE0_API_URL = import.meta.env.VITE_JUDGE0_API_URL;
 export const createSubmission = async (sourceCode, languageId, stdin) => {
   const response = await fetch(`${JUDGE0_API_URL}/submissions?base64_encoded=false&wait=false`, {
     method: 'POST',
