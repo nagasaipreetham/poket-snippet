@@ -7,7 +7,7 @@ const CodeEditor = lazy(() => import('../Editor/CodeEditor'));
 
 import { runCode } from '../../services/compilerService';
 import useCompilerStore from '../../store/compilerStore';
-import { GoogleGenAI } from "@google/genai";
+// NVIDIA Qwen API is called via fetch (OpenAI-compatible REST API)
 import toast from 'react-hot-toast';
 
 import { useAuth } from '../../context/AuthContext';
@@ -146,9 +146,6 @@ const CompilerInterface = () => {
   const [targetLanguage, setTargetLanguage] = useState('');
   const isToggleAction = useRef(false);
 
-  // Gemini API Configuration
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_AUTO_COMPLETE_KEY;
-
   const handleAutoComplete = async () => {
     if (enhancedCode) {
       // Toggle Mode
@@ -174,18 +171,7 @@ const CompilerInterface = () => {
     setOriginalCode(code); // Save current as original
     setOriginalLanguage(language);
 
-    // Verify key exists
-    if (!GEMINI_API_KEY) {
-      toast.error("API Key missing. Check .env file.");
-      console.error("VITE_GEMINI_AUTO_COMPLETE_KEY is missing");
-      setIsAutoCompleting(false);
-      return;
-    }
-
     try {
-      // Initialize client
-      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
       const prompt = `
         You are an expert coding assistant. 
         Please complete, fix, or enhance the following code.
@@ -201,24 +187,27 @@ const CompilerInterface = () => {
         ${code}
       `;
 
-      // Use usage pattern from gemini.js:
-      // const chat = ai.chats.create({ model: ..., history: ... })
-      // const result = await chat.sendMessage(...)
-
-      const chat = client.chats.create({
-        model: 'gemini-2.5-flash-lite',
-        history: [], // No history needed for single completion
+      const response = await fetch('/api/ai/autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
       });
 
-      const result = await chat.sendMessage({
-        message: prompt
-      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `API request failed with status ${response.status}`);
+      }
 
-      let generatedCode = result.text;
+      const data = await response.json();
+      let generatedCode = data.code || '';
 
       if (generatedCode && generatedCode.trim()) {
-        // Clean up markdown if present despite instructions
-        generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+        // Extract code from markdown code blocks if present
+        // Matches content between first ``` and last ```
+        const codeBlockMatch = generatedCode.match(/```[a-zA-Z]*\n([\s\S]*?)\n?```/);
+        if (codeBlockMatch) {
+          generatedCode = codeBlockMatch[1];
+        }
 
         setEnhancedCode(generatedCode);
         setEnhancedLanguage(language); // Language doesn't change for auto-complete
@@ -253,15 +242,7 @@ const CompilerInterface = () => {
     setOriginalCode(code);
     setOriginalLanguage(language);
 
-    // Verify key exists
-    if (!GEMINI_API_KEY) {
-      toast.error("API Key missing. Check .env file.");
-      setIsConverting(false);
-      return;
-    }
-
     try {
-      const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       const targetLangName = languages.find(l => l.id === targetLanguage)?.name || targetLanguage;
 
       const prompt = `
@@ -280,19 +261,27 @@ const CompilerInterface = () => {
         ${code}
       `;
 
-      const chat = client.chats.create({
-        model: 'gemini-2.5-flash-lite',
-        history: [],
+      const response = await fetch('/api/ai/convert-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
       });
 
-      const result = await chat.sendMessage({
-        message: prompt
-      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `API request failed with status ${response.status}`);
+      }
 
-      let generatedCode = result.text;
+      const data = await response.json();
+      let generatedCode = data.code || '';
 
       if (generatedCode && generatedCode.trim()) {
-        generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+        // Extract code from markdown code blocks if present
+        // Matches content between first ``` and last ```
+        const codeBlockMatch = generatedCode.match(/```[a-zA-Z]*\n([\s\S]*?)\n?```/);
+        if (codeBlockMatch) {
+          generatedCode = codeBlockMatch[1];
+        }
 
         setEnhancedCode(generatedCode);
         setEnhancedLanguage(targetLanguage);

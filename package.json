@@ -39,6 +39,7 @@
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.6",
     "open-color": "^1.9.1",
+    "openai": "^6.34.0",
     "pako": "^2.1.0",
     "perfect-freehand": "^1.2.2",
     "pica": "^9.0.1",
