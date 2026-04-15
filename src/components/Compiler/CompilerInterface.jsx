@@ -187,7 +187,7 @@ const CompilerInterface = () => {
         ${code}
       `;
 
-      const response = await fetch('/api/ai/autocomplete', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/autocomplete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
@@ -261,7 +261,7 @@ const CompilerInterface = () => {
         ${code}
       `;
 
-      const response = await fetch('/api/ai/convert-code', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/convert-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
